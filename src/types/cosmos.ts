@@ -29,6 +29,25 @@ export type FeatureCategory =
   | 'subterranean'
   | 'anthropology_tech';
 
+export interface OcularEvolutionState {
+  cones: {
+    shortBlue: boolean; // ~420nm S-cone
+    mediumGreen: boolean; // ~534nm M-cone
+    longRed: boolean; // ~564nm L-cone ("Red is in the middle and is a cheat!")
+    redInMiddleCheatActive: boolean;
+  };
+  rodsPresent: boolean; // Scotopic brightness & contours; if false -> Kokošja Slepota (Night Blindness / cannot see stars!)
+  kokosjaSlepotaActive: boolean; // True when rodsPresent === false
+  colorBlindnessMode:
+    | 'none'
+    | 'protanopia_no_red'
+    | 'deuteranopia_no_green'
+    | 'tritanopia_no_blue';
+  contrastIllusionLevel: number; // 0 to 100% lateral inhibition / relative contrast illusion
+  canSeeStarsAtNight: boolean;
+  simulateAlienVisionFilter: boolean; // Live viewport ocular filter toggle
+}
+
 export interface Phase1GenesisState {
   turnCount: number;
   timeArrow: TimeArrowMode;
@@ -83,7 +102,7 @@ export interface JuliaAtmosphericPhysics {
   equilibriumTempK: number; // T_eq from Sun luminosity & orbital distance
   surfaceTempC: number; // T_surf = T_eq * (1 + 0.75*tau)^0.25 - 273.15
   waterBoilingPointC: number; // Clausius-Clapeyron boiling point at P_0
-  archimedesBuoyancyIndex: number; // Supports Sky Whales when >= 1.0
+  archimedesBuoyancyIndex: number; // Supports Sky Whales when >= 1.15
   skyWhalesPresent: boolean;
   aerodynamicDragMultiplier: number;
 }
@@ -111,6 +130,7 @@ export interface Phase2SolarAndChemistryState {
     retinalPurpleMicrobes: boolean;
     woodDecomposerFungi: boolean;
   };
+  ocular: OcularEvolutionState;
   deadWoodStrata: number; // 0 to 100 buildup of un-rotted carbon/oil seams
   greatFireActive: boolean;
   atmosphericPhysics: JuliaAtmosphericPhysics;
@@ -142,7 +162,15 @@ export interface ImplementedColonyFeature {
   missingEngineeringLink: string;
   literalOutcome: string;
   alphaCentauriQuote: string;
-  status: 'thriving' | 'stressed' | 'sabotaged' | 'loophole_quirk' | 'equilibrium';
+  entropyOverOptimizationWarning: string;
+  noBacksiesLocked: boolean;
+  status:
+    | 'thriving'
+    | 'stressed'
+    | 'sabotaged'
+    | 'loophole_quirk'
+    | 'over_optimized'
+    | 'equilibrium';
   efficiency: number; // 0 to 200%
   synergyNotes: string[];
   voxelEffect:
@@ -164,6 +192,7 @@ export interface ImplementedColonyFeature {
     | 'oil_derrick_warming'
     | 'clouds_and_seasons'
     | 'sky_whale_pod'
+    | 'satisfractured_conveyor'
     | 'entropy_monolith';
   turnCreated: number;
 }
@@ -225,6 +254,7 @@ export interface TurnChronicleEntry {
   id: string;
   turnNumber: number;
   phase: CosmicPhase;
+  actingPlayer: 'player1' | 'player2' | 'both';
   p1Active: string;
   p1Passive: string;
   p2Active: string;
@@ -247,7 +277,15 @@ export interface Phase3SandboxState {
   eraTitle: string;
   season: 'spring' | 'summer' | 'autumn' | 'winter';
   cloudCover: number; // 0 to 100
-  agencyLevel: number; // 0 to 100 (Autonomous alien agency & tool comprehension)
+  agencyLevel: number; // 0 to 100
+  mathRules: {
+    collatzValue: number; // 3n+1 or n/2 state
+    collatzTrajectory: number[];
+    powerTowerA: number; // Phase I base
+    powerTowerB: number; // Phase II exponent
+    powerTowerC: number; // Phase III exponent
+    powerTowerDisplay: string; // e.g., "2^(3^2) = 512x Complexity"
+  };
   climate: {
     fossilFuelBurned: number; // 0 to 100%
     globalWarmingDeltaC: number; // +0.0 to +18.0 C
@@ -263,6 +301,7 @@ export interface Phase3SandboxState {
   };
   resources: {
     timber: number;
+    treesRemainingOnIsland: number; // 100% down to 0% (Entropy tries to make them farm ALL wood & die out!)
     stoneOre: number;
     biomass: number;
     oilBarrels: number;
@@ -293,9 +332,48 @@ export interface OracleChatMessage {
   timestamp: string;
 }
 
+export interface DivergenceNode {
+  id: string;
+  label: string;
+  category:
+    | 'origin'
+    | 'attractor'
+    | 'phase1_constant'
+    | 'phase2_planet'
+    | 'phase2_ocular'
+    | 'phase3_move'
+    | 'loophole';
+  phase: 0 | 1 | 2 | 3;
+  paradigm:
+    | 'origin'
+    | 'alphaCentauri'
+    | 'aoe2'
+    | 'rimworld'
+    | 'blackAndWhite'
+    | 'entropy';
+  weight: number;
+  turnAdded: number;
+  description: string;
+  loopholeQuote?: string;
+}
+
+export interface DivergenceLink {
+  source: string;
+  target: string;
+  kind: 'causal_chain' | 'paradigm_pull' | 'entropy_shear';
+  strength: number;
+}
+
 export interface CosmosGameState {
   phase: CosmicPhase;
   globalTurn: number;
+  activePlayerTurn: 'player1' | 'player2';
+  lastPlayerMove: {
+    player: 'player1' | 'player2';
+    active: string;
+    passive: string;
+    openLoopholeHint: string;
+  } | null;
   entropyIndex: number; // 0 to 100
   lastEntropyCounterLaw: string;
   phaseTransitionBanner: {

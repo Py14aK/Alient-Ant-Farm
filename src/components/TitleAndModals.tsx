@@ -22,115 +22,103 @@ export const TitleScreenOverlay: React.FC<TitleScreenOverlayProps> = ({
   }, [onStartGame]);
 
   return (
-    <div className="fixed inset-0 z-30 flex flex-col items-center justify-between p-8 pointer-events-none bg-gradient-to-b from-[#090B10]/85 via-[#090B10]/35 to-[#090B10]/90">
-      {/* Top quiet kicker */}
-      <div className="text-xs tracking-widest text-slate-400 font-mono-tabular pt-2">
-        TWO-PLAYER + ENTROPY EMERGENT STRATEGY SANDBOX
+    <div className="fixed inset-0 z-30 flex flex-col items-center justify-between p-8 pointer-events-none bg-gradient-to-b from-[#05080C]/90 via-[#05080C]/45 to-[#05080C]/95 font-mono">
+      <div className="text-xs tracking-widest text-[#22C55E] pt-2 uppercase">
+        STARCRAFT 1 2D SPRITES ON 3D STEPPED VOXEL CLIFFS · 2-PLAYER + ENTROPY AI
       </div>
 
-      {/* Centerpiece SVG Lockup with generous negative space */}
-      <div className="flex flex-col items-center text-center max-w-2xl my-auto pointer-events-auto">
+      <div className="flex flex-col items-center text-center max-w-3xl my-auto pointer-events-auto">
         <svg
-          viewBox="0 0 560 130"
-          className="w-full max-w-[520px] h-auto mb-4"
+          viewBox="0 0 680 140"
+          className="w-full max-w-[640px] h-auto mb-4"
           role="img"
-          aria-label="Aethelgard: The Ant-Farm Cosmos"
+          aria-label="First We Must Prompt The Universe: Satisfractured"
         >
           <defs>
-            <linearGradient id="titleGold" x1="0%" y1="0%" x2="100%" y2="0%">
-              <stop offset="0%" stopColor="#FDE68A" />
+            <linearGradient id="sc1TitleGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+              <stop offset="0%" stopColor="#22C55E" />
               <stop offset="50%" stopColor="#F59E0B" />
               <stop offset="100%" stopColor="#38BDF8" />
             </linearGradient>
           </defs>
-          {/* Astrolabe Orbital Rings */}
           <ellipse
-            cx="280"
-            cy="65"
-            rx="240"
-            ry="44"
+            cx="340"
+            cy="70"
+            rx="300"
+            ry="50"
             fill="none"
-            stroke="url(#titleGold)"
-            strokeWidth="1.2"
-            strokeDasharray="6 6"
-            opacity="0.45"
+            stroke="url(#sc1TitleGrad)"
+            strokeWidth="1.5"
+            strokeDasharray="6 4"
+            opacity="0.55"
           />
-          <circle
-            cx="280"
-            cy="65"
-            r="52"
-            fill="none"
-            stroke="#F59E0B"
-            strokeWidth="1"
-            opacity="0.35"
-          />
-          <circle cx="95" cy="48" r="5" fill="#F59E0B" />
-          <circle cx="465" cy="82" r="6" fill="#06B6D4" />
-          <circle cx="280" cy="13" r="4" fill="#A855F7" />
           <text
-            x="280"
-            y="64"
+            x="340"
+            y="62"
             textAnchor="middle"
-            fill="url(#titleGold)"
+            fill="url(#sc1TitleGrad)"
             fontFamily="Cinzel, Georgia, serif"
-            fontSize="40"
+            fontSize="28"
             fontWeight="700"
-            letterSpacing="6"
+            letterSpacing="4"
           >
-            AETHELGARD
+            FIRST WE MUST PROMPT THE UNIVERSE
           </text>
           <text
-            x="280"
-            y="95"
+            x="340"
+            y="98"
             textAnchor="middle"
-            fill="#E2E8F0"
-            fontFamily="Plus Jakarta Sans, sans-serif"
+            fill="#22C55E"
+            fontFamily="JetBrains Mono, monospace"
             fontSize="13"
-            fontWeight="600"
-            letterSpacing="4.5"
+            fontWeight="700"
+            letterSpacing="3.5"
           >
-            THE ANT-FARM COSMOS
+            SATISFRACTURED · STARCRAFT 1 VOXEL ANT-FARM
           </text>
         </svg>
 
-        <p className="text-sm md:text-base text-slate-300 leading-relaxed mb-6 max-w-xl">
-          To create pie, you must first prompt the universe. Cooperate in{' '}
-          <span className="text-amber-300 font-medium">Phase I (Big Bang &amp; Molecular Clouds)</span>,
-          select your planet and seed biochemical rules in{' '}
-          <span className="text-cyan-300 font-medium">Phase II (Solar System Simulator)</span>,
-          then clash or co-build across an autonomous{' '}
-          <span className="text-purple-300 font-medium">Phase III 3D Voxel Ant-Farm</span>—from{' '}
-          <em>SimCity</em> traffic networks to <em>Age of Empires</em> sieges in the mud.
+        <p className="text-xs md:text-sm text-slate-300 font-sans leading-relaxed mb-6 max-w-2xl">
+          Configure <span className="text-amber-300 font-semibold">Phase I SU(3) Big Bang Physics</span>{' '}
+          to ignite a <span className="text-amber-300">1.0 M☉ Yellow Sun</span>, evolve{' '}
+          <span className="text-cyan-300 font-semibold">
+            Phase II 4th-Planet Goldilocks Sky Whales &amp; Trichromatic + Rod Eyes
+          </span>{' '}
+          (avoiding <em>Kokošja Slepota</em> night blindness!), and battle{' '}
+          <span className="text-rose-400 font-semibold">Entropy’s Ruthless Optimizer</span> across a{' '}
+          <span className="text-[#22C55E] font-semibold">
+            Phase III StarCraft 1 2D Sprite &amp; 3D Stepped Voxel Cliff Board
+          </span>{' '}
+          where every move has <strong>No Backsies!</strong>
         </p>
 
         <div className="flex flex-wrap items-center justify-center gap-3 mb-4">
           <button
             type="button"
             onClick={onStartGame}
-            className="px-7 py-3 bg-amber-500 hover:bg-amber-400 text-slate-950 font-semibold text-sm rounded-lg transition-transform active:scale-95 cursor-pointer whitespace-nowrap shrink-0"
+            className="px-6 py-3 bg-[#22C55E] hover:bg-emerald-400 text-slate-950 font-bold text-xs uppercase rounded-sm border-2 border-emerald-200 transition-transform active:scale-95 cursor-pointer"
           >
-            Start Simulation (Phase I Genesis)
+            Launch Phase I (SU(3) Big Bang Genesis)
           </button>
           <button
             type="button"
             onClick={() => onJumpToPhase(2)}
-            className="px-4 py-3 bg-[#151A28] hover:bg-[#1E2538] text-slate-200 border border-[#2A334B] text-xs font-medium rounded-lg transition-colors cursor-pointer whitespace-nowrap shrink-0"
+            className="px-4 py-3 bg-[#091410] hover:bg-[#11261E] text-amber-300 border-2 border-amber-500/50 text-xs font-bold uppercase rounded-sm transition-colors cursor-pointer"
           >
-            Jump to Phase II (Solar System)
+            Jump to Phase II (Goldilocks Orbits &amp; Eye)
           </button>
           <button
             type="button"
             onClick={() => onJumpToPhase(3)}
-            className="px-4 py-3 bg-[#151A28] hover:bg-[#1E2538] text-cyan-300 border border-cyan-500/30 text-xs font-medium rounded-lg transition-colors cursor-pointer whitespace-nowrap shrink-0"
+            className="px-4 py-3 bg-[#091410] hover:bg-[#11261E] text-cyan-300 border-2 border-cyan-500/50 text-xs font-bold uppercase rounded-sm transition-colors cursor-pointer"
           >
-            Jump to Phase III (Ant-Farm Colony)
+            Jump to Phase III (SC1 Sprite Voxel Board)
           </button>
         </div>
       </div>
 
-      {/* Single flat control-hint line */}
-      <div className="text-xs text-slate-400 font-mono-tabular pb-1">
-        Drag Orbit Camera · Scroll Zoom · Click Planets/Units to Inspect · Enter Start · H Toggle HUD
+      <div className="text-[11px] text-slate-400 pb-1">
+        Drag Orbit Camera · Scroll Zoom · [E] D3 Entropy Heatmap · [V] Alien Eye Vision · [H] Toggle SC1 Console
       </div>
     </div>
   );
@@ -143,111 +131,66 @@ interface ChronicleModalProps {
 
 export const ChronicleModal: React.FC<ChronicleModalProps> = ({ gameState, onClose }) => {
   return (
-    <div className="fixed inset-0 z-40 flex items-center justify-center p-4 bg-black/75">
-      <div className="w-full max-w-3xl max-h-[84vh] flex flex-col bg-[#0F131C] border border-[#262D40] rounded-xl overflow-hidden">
-        <div className="flex items-center justify-between px-6 py-4 border-b border-[#262D40]">
+    <div className="fixed inset-0 z-40 flex items-center justify-center p-4 bg-black/80 font-mono">
+      <div className="w-full max-w-3xl max-h-[84vh] flex flex-col bg-[#060C09] border-2 border-[#22C55E] rounded-sm overflow-hidden">
+        <div className="flex items-center justify-between px-5 py-3 border-b border-[#1E3A2F] bg-[#0A1611]">
           <div>
-            <h2 className="text-lg font-bold text-slate-100">
-              Cosmic Chronicle &amp; Planetary Constitution
+            <h2 className="text-sm font-bold text-[#22C55E] uppercase">
+              StarCraft Datalinks · Cosmic Chronicle &amp; No-Backsies Constitution
             </h2>
-            <p className="text-xs text-slate-400">
-              Turn {gameState.globalTurn} · Active Laws, Molecular History &amp; Emergent Synergies
+            <p className="text-[11px] text-slate-400">
+              Turn #{gameState.globalTurn} · Sun {gameState.phase1.sunMassSolar.toFixed(2)} M☉ · Entropy {gameState.entropyIndex}%
             </p>
           </div>
           <button
             type="button"
             onClick={onClose}
-            className="px-3 py-1.5 text-xs font-medium text-slate-300 hover:text-white bg-[#1A2030] rounded-md cursor-pointer"
+            className="px-3 py-1 text-xs font-bold text-slate-200 hover:text-white bg-[#13261E] border border-[#22C55E]/50 rounded-sm cursor-pointer"
           >
-            Close
+            Close [Esc]
           </button>
         </div>
 
-        <div className="p-6 overflow-y-auto space-y-6">
-          {/* Set-in-Stone Planetary & Alien Summary */}
-          <div className="p-4 rounded-lg bg-[#141926] border border-[#262D40]">
-            <div className="text-xs text-amber-400 font-semibold mb-1">
-              {gameState.phase === 3
-                ? 'SET IN STONE: LOCKED PLANETARY CONSTITUTION & MAIN ALIEN'
-                : 'CURRENT PLANETARY & COSMIC STATE'}
+        <div className="p-5 overflow-y-auto space-y-4">
+          <div className="p-3.5 rounded-sm bg-[#09130E] border border-[#1E3A2F]">
+            <div className="text-xs text-amber-400 font-bold mb-1">
+              LOCKED PLANETARY &amp; OCULAR CONSTITUTION
             </div>
-            <div className="text-sm font-semibold text-slate-100 mb-1">
+            <div className="text-sm font-bold text-slate-100 mb-1">
               {gameState.mainAlien.name} — {gameState.mainAlien.morphology}
             </div>
-            <p className="text-xs text-slate-300 mb-3">{gameState.mainAlien.loreSummary}</p>
-            <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-slate-400 font-mono-tabular">
+            <p className="text-xs text-slate-300 font-sans mb-2">{gameState.mainAlien.loreSummary}</p>
+            <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-emerald-300">
               <span>World: {gameState.phase2.selectedWorldType.toUpperCase()}</span>
               <span>·</span>
-              <span>Density: {gameState.phase2.densityG.toFixed(2)}G</span>
+              <span>P₀: {gameState.phase2.atmosphericPhysics.surfacePressureBar} bar</span>
               <span>·</span>
-              <span>Acidity: {gameState.phase2.molecules.acidity}%</span>
-              <span>·</span>
-              <span>H2O: {gameState.phase2.molecules.h2o}%</span>
-              <span>·</span>
-              <span>Alcohol: {gameState.phase2.molecules.alcohol}%</span>
+              <span>T_boil: {gameState.phase2.atmosphericPhysics.waterBoilingPointC}°C</span>
               <span>·</span>
               <span>
-                Genetics: {gameState.phase2.genetics.dnaPresent ? 'DNA + RNA' : 'RNA Only'}
+                Sky Whales: {gameState.phase2.atmosphericPhysics.skyWhalesPresent ? 'ACTIVE' : 'NO'}
               </span>
               <span>·</span>
               <span>
-                Bacteria/Fungi:{' '}
-                {gameState.phase2.microbes.woodDecomposerFungi
-                  ? 'Wood-Decomposers Active'
-                  : 'No Wood-Decomposers!'}
+                Kokošja Slepota: {gameState.phase2.ocular.kokosjaSlepotaActive ? 'YES (NO RODS)' : 'NO (RODS OK)'}
               </span>
             </div>
           </div>
 
-          {/* Turn-by-Turn Chronicle Log */}
           <div className="space-y-3">
             {gameState.chronicles.map((entry) => (
               <div
                 key={entry.id}
-                className="p-4 rounded-lg bg-[#121621] border border-[#22293A] space-y-2"
+                className="p-3.5 rounded-sm bg-[#08100C] border border-[#1E3A2F] space-y-2"
               >
-                <div className="flex items-center justify-between text-xs text-slate-400 font-mono-tabular">
+                <div className="flex items-center justify-between text-[11px] text-slate-400">
                   <span>
-                    Phase {entry.phase} · Turn {entry.turnNumber}
+                    Phase {entry.phase} · Turn #{entry.turnNumber}
                   </span>
                   <span>{entry.timestamp}</span>
                 </div>
-                <h3 className="text-sm font-semibold text-slate-100">{entry.headline}</h3>
-                <p className="text-xs text-slate-300 leading-relaxed">{entry.narrative}</p>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-2 pt-1 text-xs">
-                  <div className="p-2 rounded bg-[#0C0F17] border border-[#1E2434]">
-                    <span className="text-amber-400 font-medium">P1 Active:</span>{' '}
-                    <span className="text-slate-200">{entry.p1Active}</span>
-                    <div className="text-slate-400 mt-0.5">
-                      Passive: {entry.p1Passive}
-                    </div>
-                  </div>
-                  <div className="p-2 rounded bg-[#0C0F17] border border-[#1E2434]">
-                    <span className="text-cyan-400 font-medium">P2 Active:</span>{' '}
-                    <span className="text-slate-200">{entry.p2Active}</span>
-                    <div className="text-slate-400 mt-0.5">
-                      Passive: {entry.p2Passive}
-                    </div>
-                  </div>
-                </div>
-
-                {entry.synergies.length > 0 && (
-                  <div className="pt-2 space-y-1">
-                    {entry.synergies.map((syn, idx) => (
-                      <div
-                        key={idx}
-                        className="text-xs text-slate-300 flex items-start gap-2"
-                      >
-                        <span className="text-amber-400 font-mono-tabular shrink-0">→</span>
-                        <span>
-                          <strong className="text-slate-100">{syn.source}</strong> on{' '}
-                          <strong className="text-slate-200">{syn.target}</strong>: {syn.outcome}
-                        </span>
-                      </div>
-                    ))}
-                  </div>
-                )}
+                <h3 className="text-xs font-bold text-amber-300">{entry.headline}</h3>
+                <p className="text-xs text-slate-300 font-sans leading-relaxed">{entry.narrative}</p>
               </div>
             ))}
           </div>

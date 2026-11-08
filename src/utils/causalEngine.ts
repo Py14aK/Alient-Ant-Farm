@@ -10,79 +10,132 @@ import {
   Phase2SolarAndChemistryState,
   TurnChronicleEntry,
 } from '../types/cosmos';
+import {
+  computeGoldilocksBoundsAU,
+  solveJuliaAtmosphericPhysics,
+  updateCandidateWorldsForSun,
+} from './juliaPhysicsSolver';
 
 export const CANDIDATE_WORLDS: CandidateCelestialBody[] = [
   {
-    id: 'rocky',
-    name: 'Aethel-Prime (Rocky Terrestrial)',
-    subtitle: 'Dense Silicate-Iron Mantle · Tectonic Basins',
-    orbitRadius: 9.5,
-    orbitSpeed: 0.42,
-    eccentricity: 0.04,
-    angle: 0.8,
-    baseSize: 1.35,
-    baseColorHex: '#3B82F6',
-    accentColorHex: '#10B981',
-    hasRingOrMoon: true,
-    defaultDensityG: 1.0,
-    defaultAcidity: 22,
-    defaultH2O: 55,
+    id: 'scorched_inner',
+    orbitNumber: 1,
+    name: '1st Orbit: Vulcan-I (Inner Slag)',
+    subtitle: 'Tidal-Locked Silicate Cinder · 0.38 AU',
+    orbitRadiusAU: 6.8,
+    eccentricity: 0.08,
+    angle: 0.4,
+    massEarth: 0.4,
+    baseSize: 0.85,
+    baseColorHex: '#DC2626',
+    accentColorHex: '#F97316',
+    hasRingOrMoon: false,
+    defaultDensityG: 0.95,
+    defaultAcidity: 65,
+    defaultH2O: 5,
+    inGoldilocksZone: false,
     description:
-      'Balanced silicate crust with active volcanism. Prone to becoming a runaway Venusian greenhouse if sulfur/carbon bacteria are forgotten, or a Purple Carboniferous forest if wood forms before mushrooms.',
+      '1st planet from the Sun. Scorched under a Yellow Sun, but becomes the Goldilocks Habitable World if Phase I ignites a cool Red Dwarf star!',
+  },
+  {
+    id: 'venusian_rocky',
+    orbitNumber: 2,
+    name: '2nd Orbit: Cythera-II (Sulfur Veil)',
+    subtitle: 'Dense Basalt Mantle · 0.72 AU',
+    orbitRadiusAU: 10.0,
+    eccentricity: 0.02,
+    angle: 1.7,
+    massEarth: 0.92,
+    baseSize: 1.15,
+    baseColorHex: '#EAB308',
+    accentColorHex: '#CA8A04',
+    hasRingOrMoon: false,
+    defaultDensityG: 1.1,
+    defaultAcidity: 68,
+    defaultH2O: 22,
+    inGoldilocksZone: false,
+    description:
+      '2nd planet from the Sun. Teeters on the edge of a runaway Venusian greenhouse if players forget to prompt sulfur/carbon-fixing bacteria!',
   },
   {
     id: 'martian',
-    name: 'Khor-Vex (Martian Arid World)',
-    subtitle: 'Iron-Oxide Canyons · Thin Cryo-Envelope',
-    orbitRadius: 13.8,
-    orbitSpeed: 0.28,
-    eccentricity: 0.09,
-    angle: 2.4,
-    baseSize: 1.05,
+    orbitNumber: 3,
+    name: '3rd Orbit: Ares-III (Iron Canyon)',
+    subtitle: 'Rusted Oxide Plateaus · 0.88 AU',
+    orbitRadiusAU: 13.2,
+    eccentricity: 0.07,
+    angle: 2.9,
+    massEarth: 0.55,
+    baseSize: 1.0,
     baseColorHex: '#EA580C',
     accentColorHex: '#F59E0B',
     hasRingOrMoon: false,
-    defaultDensityG: 0.45,
-    defaultAcidity: 35,
-    defaultH2O: 18,
+    defaultDensityG: 0.65,
+    defaultAcidity: 32,
+    defaultH2O: 30,
+    inGoldilocksZone: false,
     description:
-      'Low-gravity rusted plains and deep subterranean permafrost aquifers. Ideal for sprawling SimCity transit tubes or high-arcing artillery.',
+      '3rd planet from the Sun. Iron-rich canyons and subterranean ice aquifers ready for Satisfractured conveyor lines or borehole terraforming.',
+  },
+  {
+    id: 'goldilocks_earth',
+    orbitNumber: 4,
+    name: '4th Orbit: Aethel-IV (Goldilocks Cradle)',
+    subtitle: 'Yellow-Sun Habitable Zone · 1.00 AU',
+    orbitRadiusAU: 16.5,
+    eccentricity: 0.03,
+    angle: 4.1,
+    massEarth: 1.25,
+    baseSize: 1.4,
+    baseColorHex: '#2563EB',
+    accentColorHex: '#10B981',
+    hasRingOrMoon: true,
+    defaultDensityG: 1.35,
+    defaultAcidity: 22,
+    defaultH2O: 68,
+    inGoldilocksZone: true,
+    description:
+      '4th planet from the Sun! Around a 1.0 M_sun Yellow Sun, this is the quintessential Goldilocks Earth—and if you make its atmosphere dense enough, buoyant Sky Whales (à la Hitchhiker’s Guide) evolve in the clouds!',
   },
   {
     id: 'failed_star_moon',
-    name: 'Tiamat-IV (Failed Star Moon System)',
-    subtitle: 'Tidal-Locked Moon of a Sub-Stellar Brown Dwarf',
-    orbitRadius: 19.2,
-    orbitSpeed: 0.18,
-    eccentricity: 0.03,
-    angle: 4.1,
+    orbitNumber: 5,
+    name: '5th Orbit: Tiamat-V (Failed Star Moon)',
+    subtitle: 'Exomoon of a Brown Dwarf · 1.52 AU',
+    orbitRadiusAU: 21.2,
+    eccentricity: 0.04,
+    angle: 5.0,
+    massEarth: 1.85,
     baseSize: 1.75,
     baseColorHex: '#9333EA',
     accentColorHex: '#EC4899',
     hasRingOrMoon: true,
-    defaultDensityG: 1.45,
-    defaultAcidity: 48,
-    defaultH2O: 40,
+    defaultDensityG: 1.8,
+    defaultAcidity: 45,
+    defaultH2O: 50,
+    inGoldilocksZone: false,
     description:
-      'Basked in infrared glow and fierce magnetospheric lightning from its parent Failed Star. Easily tips into a Super-Dense High-G Crusher or Purple Retinal jungle.',
+      '5th orbit: A heavy moon orbiting a Failed Brown-Dwarf Star. Easily becomes "Too Dense" (1.8G+) or a Goldilocks refuge if Phase I ignites a Hot Blue Giant Sun!',
   },
   {
     id: 'comet',
-    name: 'Halcyon-9 (Great Eccentric Comet)',
-    subtitle: 'Elliptical Ice-Nucleus · Perihelion Steam Geysers',
-    orbitRadius: 24.0,
-    orbitSpeed: 0.34,
-    eccentricity: 0.42,
-    angle: 5.5,
-    baseSize: 0.9,
+    orbitNumber: 6,
+    name: '6th Orbit: Halcyon-VI (Great Comet)',
+    subtitle: 'Eccentric Volatile Ice-Core · 2.10 AU',
+    orbitRadiusAU: 25.5,
+    eccentricity: 0.38,
+    angle: 5.9,
+    massEarth: 0.3,
+    baseSize: 0.85,
     baseColorHex: '#38BDF8',
     accentColorHex: '#E0F2FE',
     hasRingOrMoon: false,
-    defaultDensityG: 0.35,
+    defaultDensityG: 0.4,
     defaultAcidity: 15,
-    defaultH2O: 85,
+    defaultH2O: 90,
+    inGoldilocksZone: false,
     description:
-      'Swings from deep freeze to scorching solar approach. Rich in H2O and organic volatiles that readily ferment into vast Alcohol Oceans.',
+      '6th orbit: Eccentric icy comet overflowing with H2O and organic sugars that readily ferment into volatile Alcohol Seas.',
   },
 ];
 
@@ -98,109 +151,128 @@ export interface PromptInspirationPreset {
 export const PHASE_PRESETS: Record<1 | 2 | 3, PromptInspirationPreset[]> = {
   1: [
     {
-      label: 'Standard Big Bang + Molecular Cloud Ignition',
-      badge: 'Cooperative Genesis',
-      p1Active: 'Ignite primordial hydrogen-carbon molecular cloud into a golden protostar',
-      p1Passive: 'Time flows strictly forward with thermodynamic irreversibility',
-      p2Active: 'Seed heavy iron and silicate supernova dust spirals around the core',
-      p2Passive: 'Balanced gravity and electromagnetic plasma filaments binding matter',
+      label: 'Standard Model: SU(3) Confinement + Inflation + 1.0 M☉ Yellow Sun',
+      badge: 'Yellow Sun (4th Planet Goldilocks)',
+      p1Active: 'Trigger exponential Cosmic Inflation (phi field) and SU(3) quark confinement into protons',
+      p1Passive: 'CP-violation time asymmetry so matter survives over antimatter (forward arrow of time)',
+      p2Active: 'Collapse hydrogen-carbon molecular cloud into a 1.0 M_sun Yellow G-Type Sun',
+      p2Passive: 'Balanced Newtonian gravity and U(1) electromagnetism seeding heavy elements',
     },
     {
-      label: 'High-Gravity Heavy Metal Forge',
-      badge: 'Dense Universe',
-      p1Active: 'Compress ultra-dense neutron-star debris into the proto-solar core',
-      p1Passive: 'Amplified gravitational attraction pulling heavy ores inward',
-      p2Active: 'Unleash high-voltage cosmic lightning across the molecular nebula',
-      p2Passive: 'Reversible time-symmetry echoes preserving ancient energy states',
+      label: 'Hot Blue Giant Sun (1.65 M☉) + High Electromagnetism',
+      badge: 'Outer Goldilocks Shift',
+      p1Active: 'Hyper-compress massive molecular nebula with strong SU(3) fusion coupling into a 1.65 M_sun Blue Star',
+      p1Passive: 'Intense U(1) electromagnetic plasma filaments across the proto-planetary disk',
+      p2Active: 'Synthesize dense iron, sulfur, and silicate rings in the outer orbits',
+      p2Passive: 'Reversible quantum time-symmetry echoes slowing entropy',
     },
   ],
   2: [
     {
-      label: 'The Purple Earth & The Great Fire (No Mushrooms!)',
-      badge: 'Carboniferous Inferno',
-      p1Active: 'Create purple retinal flora and towering woody lignin trees across the continents',
-      p1Passive: 'High oxygen and dense carbon polymer bonding rules with DNA heredity',
-      p2Active: 'Unleash dry volcanic lightning storms over the ancient purple forests',
-      p2Passive: 'Zero wood-eating bacteria or mushrooms exist to decompose fallen trees',
+      label: '4th Planet Dense Goldilocks -> Sky Whales & Full Trichromatic + Rod Eyes!',
+      badge: 'Hitchhiker’s Sky Whales',
+      p1Active: 'On the 4th planet, build a dense 1.45G buoyant H2O atmosphere with aero-plankton & Sky Whales',
+      p1Passive: 'DNA double-helix stability + wood-eating mushrooms + sulfur-fixing bacteria',
+      p2Active: 'Evolve the Eye with 3 color cone distributions (Red-in-the-middle cheat) AND Rhodopsin Rods for night contours',
+      p2Passive: 'Lateral inhibition contrast perception & clear night stargazing without Kokošja Slepota',
     },
     {
-      label: 'Oops, We Forgot Bacteria! (Accidental Venus World)',
-      badge: 'Runaway Acid Greenhouse',
-      p1Active: 'Erupt sulfuric acid geysers and dense CO2 volcanic plumes into the sky',
-      p1Passive: 'Extreme atmospheric acidity and thermal heat trapping without carbon-fixing bacteria',
-      p2Active: 'Condense boiling sulfuric clouds and metallic frost across the highlands',
-      p2Passive: 'RNA-only extremophile soup with zero sulfur-reducing microbes',
+      label: 'Forgot Rods -> Kokošja Slepota (Night Blindness) + Purple Great Fire!',
+      badge: 'Night Blindness & Great Fire',
+      p1Active: 'Cover the continents in purple retinal trees and woody lignin polymers',
+      p1Passive: 'Zero wood-eating bacteria or mushrooms exist to decompose fallen timber',
+      p2Active: 'Evolve 2-cone dichromatic eyes (missing Red cone -> Color Blindness) and FORGET Rod photoreceptors',
+      p2Passive: 'Kokošja Slepota (Night Blindness): aliens cannot see stars in the dark or contours in shadow',
     },
     {
-      label: 'Oh, We Are Too Dense! (2.4G High-Gravity Crusher)',
-      badge: 'Super-Dense Planet',
-      p1Active: 'Accrete massive iron-osmium core layers and compress the planetary mantle',
-      p1Passive: 'Crushing 2.4G surface gravity flattening mountains into dense basalt plateaus',
-      p2Active: 'Seed white-rot wood-eating mushrooms, H2O aquifers, and stable DNA life',
-      p2Passive: 'Subterranean piezoelectric crystal veins sheltering life underground',
-    },
-    {
-      label: 'Fermented Alcohol Ocean World',
-      badge: 'Ethanol Seas',
-      p1Active: 'Flood the basins with H2O, complex carbon sugars, and wild anaerobic yeast',
-      p1Passive: 'Global fermentation converting oceans into volatile 40-proof alcohol seas',
-      p2Active: 'Create bioluminescent fungal reefs and DNA-stabilized amphibious life',
-      p2Passive: 'Warm intoxicating ethanol vapor mist blanketing the lowlands',
+      label: 'Oops, Forgot Bacteria -> Runaway Venusian Acid World',
+      badge: 'Venusian Greenhouse',
+      p1Active: 'Outgas dense CO2 and sulfuric acid plumes across the planet',
+      p1Passive: 'Zero carbon-fixing or sulfur-reducing bacteria in the primordial soup',
+      p2Active: 'Seed RNA-only extremophiles beneath boiling yellow sulfuric clouds',
+      p2Passive: 'High optical depth trapping infrared heat via ClimaAtmos radiative transfer',
     },
   ],
   3: [
     {
-      label: 'Age of Empires Siege: 100 Orcs + Wind vs. Archers + Rain',
-      badge: 'RTS Battle Emergence',
-      p1Active: '100 armored Orc raiders charging directly in front of the citadel gates',
-      p1Passive: 'Fierce crosswind blowing across the battlefield deflecting projectiles',
-      p2Active: 'Elite Elven archers stationed atop the stone ramparts firing volleys',
-      p2Passive: 'Torrential rain soaking the dirt battlefield into deep sticky mud',
+      label: 'The Wheel Loophole Duel: P1 Invents Wheel -> P2 Makes It Square!',
+      badge: 'Loophole Comedy',
+      p1Active: 'Invent the wheel attached to wooden carts for hauling colony timber',
+      p1Passive: 'Paved logging roads linking the forest to the citadel',
+      p2Active: 'You never said a ROUND wheel! Make all their wheels strictly SQUARE blocks!',
+      p2Passive: 'Bumpy cobble roads causing square-wheeled wagons to clunk at 25% speed',
     },
     {
-      label: 'Builder vs. Saboteur: Wood Farming vs. Severe Drought',
-      badge: 'Resource Sabotage',
-      p1Active: 'Establish automated alien wood farming plantations and timber sawmills',
-      p1Passive: 'Organized Age of Empires villager harvesting routes and storage barns',
-      p2Active: 'Summon scorching localized drought and bark-boring beetles over the groves',
-      p2Passive: 'Dry desiccating winds parching the soil and halting sap flow',
+      label: 'Steam Boiler Loophole -> Used for Döner Kebab Spits & Automatons!',
+      badge: 'Anthropological History',
+      p1Active: 'Invent a coal-fired steam boiler and spinning steam turbine (aeolipile)',
+      p1Passive: 'High-pressure copper steam pipes and brass gears',
+      p2Active: 'Since no locomotive drivetrain was described, use the steam turbines exclusively to spin vertical Döner kebab spits and temple automatons!',
+      p2Passive: 'Delicious roasted meat aroma distracting soldiers & lumberjacks across the colony',
     },
     {
-      label: 'Co-Op Wood Farming + Monsoon Rain Boom',
-      badge: 'Cooperative Economy',
-      p1Active: 'Plant sprawling terraced wood farms and myco-lumber mills across the valley',
-      p1Passive: 'Rich composted soil and selective DNA timber breeding',
-      p2Active: 'Build stone irrigation aqueducts feeding the forestry terraces',
-      p2Passive: 'Gentle warm monsoon rain nourishing rapid canopy growth',
+      label: 'Inventing the Hut ("Mud, Wood, Leaves") vs. Monsoon Rain',
+      badge: 'Literal AI Physics',
+      p1Active: 'Invent the Hut: pile mud, wood, and leaves together for colonist housing',
+      p1Passive: 'Rapid coastal village expansion along the low-ground shoreline',
+      p2Active: 'Summon torrential monsoon rain and gale winds over the unframed mud-leaf huts',
+      p2Passive: 'Without a triangulated roof truss or kiln bricks, wet mud melts into soup!',
     },
     {
-      label: 'SimCity Metropolis: Highway Traffic Grid vs. Rush-Hour Mudslide',
-      badge: 'SimCity Divergence',
-      p1Active: 'Construct a SimCity multi-lane paved transit road network and commuter pods',
-      p1Passive: 'Synchronized electromagnetic traffic signals and high-speed logistics zoning',
-      p2Active: 'Trigger a mischievous flash mudslide and toll-booth blockade at the central interchange',
-      p2Passive: 'Foggy rush-hour congestion slowing commuter throughput',
+      label: 'Burn Oil & Coal -> Global Warming Melts Ice & Drowns the Coast!',
+      badge: 'Climate Deluge',
+      p1Active: 'Drill deep thermal boreholes and burn underground oil & coal seams for Satisfractured 3n+1 factories',
+      p1Passive: 'Unchecked greenhouse CO2 emissions spiking atmospheric optical depth tau',
+      p2Active: 'Melt the polar glacier ice blocks and raise global sea levels by +3 meters',
+      p2Passive: 'Coastal inundation drowning low-ground huts, roads, and un-adapted units',
+    },
+    {
+      label: 'StarCraft / AoE Siege: 100 Orcs + Wind vs. Elven Archers + Rain -> Mud',
+      badge: 'RTS Siege Emergence',
+      p1Active: '100 armored Orc raiders charging in front of the high-ground rampart gates',
+      p1Passive: 'Fierce crosswind blowing across the valley deflecting arrows',
+      p2Active: 'Elite Elven archers stationed atop the stepped cliff walls firing volleys',
+      p2Passive: 'Torrential rain turning the low-ground soil blocks into deep sticky mud',
     },
   ],
 };
 
 export function evaluatePlanetArchetype(
-  p2: Phase2SolarAndChemistryState
+  p2: Phase2SolarAndChemistryState,
+  seaLevelY: number = 1.0
 ): { archetype: EmergentPlanetArchetype; alerts: string[] } {
   const alerts: string[] = [];
 
+  if (p2.atmosphericPhysics.skyWhalesPresent) {
+    alerts.push(
+      `DENSE GOLDILOCKS ATMOSPHERE (Buoyancy ${p2.atmosphericPhysics.archimedesBuoyancyIndex}x): Aero-buoyant SKY WHALES (à la Hitchhiker's Guide) have evolved in the clouds!`
+    );
+  }
+
+  if (p2.ocular.kokosjaSlepotaActive) {
+    alerts.push(
+      'KOKOŠJA SLEPOTA (Кокоша слепота / Night Blindness — No Rods): Aliens lose contour vision in the dark and CANNOT SEE THE STARS at night!'
+    );
+  }
+
+  if (p2.ocular.colorBlindnessMode !== 'none') {
+    alerts.push(
+      `OCULAR CONE DEFECT (${p2.ocular.colorBlindnessMode.replace(/_/g, ' ').toUpperCase()}): Missing color distribution causes color-blind target confusion!`
+    );
+  }
+
   if (p2.densityG >= 1.75) {
     alerts.push(
-      `OH, WE ARE TOO DENSE (${p2.densityG.toFixed(2)}G): Crushing surface gravity flattens terrain, grounds flyers, and shortens arrow arcs by 45%!`
+      `OH, WE ARE TOO DENSE (${p2.densityG.toFixed(2)}G / ${p2.atmosphericPhysics.surfaceGravityMS2} m/s²): Crushing gravity flattens terrain and grounds non-buoyant flyers!`
     );
   }
 
   if (
-    (p2.molecules.acidity >= 62 || p2.molecules.co2Sulfur >= 65) &&
+    (p2.molecules.acidity >= 60 || p2.molecules.co2Sulfur >= 62) &&
     !p2.microbes.carbonSulfurBacteria
   ) {
     alerts.push(
-      'OOPS, FORGOT BACTERIA -> VENUSIAN GREENHOUSE: Unchecked CO2 & sulfuric acid locked in a boiling acid atmosphere!'
+      `OOPS, FORGOT BACTERIA -> VENUSIAN GREENHOUSE (${p2.atmosphericPhysics.surfaceTempC}°C, ${p2.atmosphericPhysics.surfacePressureBar} bar): Unchecked CO2 & sulfuric acid!`
     );
   }
 
@@ -210,27 +282,22 @@ export function evaluatePlanetArchetype(
     p2.deadWoodStrata >= 45
   ) {
     alerts.push(
-      'NO WOOD-EATING BACTERIA OR MUSHROOMS: Dead woody lignin piled into explosive carbon seams -> THE GREAT FIRE!'
-    );
-  }
-
-  if (p2.molecules.alcohol >= 45) {
-    alerts.push(
-      `VOLATILE ALCOHOL SEAS (${Math.round(p2.molecules.alcohol)}% Ethanol): Flammable vapors & hyper-metabolic colony behavior!`
-    );
-  }
-
-  if (p2.genetics.rnaPresent && !p2.genetics.dnaPresent) {
-    alerts.push(
-      'RNA-ONLY WORLD (Forgot DNA): High genetic mutation rate causes rapid, unpredictable alien morphing!'
+      'NO WOOD-EATING BACTERIA OR MUSHROOMS: Dead woody lignin piled into explosive carbon/oil seams -> THE GREAT FIRE!'
     );
   }
 
   let archetype: EmergentPlanetArchetype = 'primordial_cradle';
-  if (p2.greatFireActive || (p2.molecules.carbonComplexity === 'woody_lignin' && !p2.microbes.woodDecomposerFungi && p2.deadWoodStrata >= 50)) {
+  if (seaLevelY >= 2.6) {
+    archetype = 'drowned_greenhouse_deluge';
+  } else if (p2.greatFireActive) {
     archetype = 'great_fire_inferno';
-  } else if ((p2.molecules.acidity >= 62 || p2.molecules.co2Sulfur >= 65) && !p2.microbes.carbonSulfurBacteria) {
+  } else if (
+    (p2.molecules.acidity >= 60 || p2.molecules.co2Sulfur >= 62) &&
+    !p2.microbes.carbonSulfurBacteria
+  ) {
     archetype = 'venusian_greenhouse';
+  } else if (p2.atmosphericPhysics.skyWhalesPresent) {
+    archetype = 'goldilocks_sky_whale_eden';
   } else if (p2.densityG >= 1.75) {
     archetype = 'super_dense_crusher';
   } else if (p2.molecules.alcohol >= 45) {
@@ -251,37 +318,46 @@ export function synthesizeMainAlien(
   const { archetype } = evaluatePlanetArchetype(p2);
   const traits: string[] = [];
 
-  if (p2.densityG >= 1.65) {
-    traits.push(`High-G Hexapod Frame (${p2.densityG.toFixed(1)}G Adapted)`);
-  } else if (p2.densityG <= 0.6) {
-    traits.push('Low-G Gliding Tendrils');
+  if (p2.atmosphericPhysics.skyWhalesPresent) {
+    traits.push('Symbiotic Sky-Whale Leviathans');
+  }
+  if (p2.ocular.kokosjaSlepotaActive) {
+    traits.push('Kokošja Slepota (Night-Blind / Star-Blind)');
   } else {
-    traits.push('Balanced Bipedal/Mycelial Posture');
+    traits.push('Rhodopsin Rod Night-Stargazers');
   }
-
-  if (p2.molecules.acidity >= 55) {
-    traits.push('Sulfuric-Resistant Silicate Carapace');
-  }
-  if (p2.molecules.alcohol >= 35) {
-    traits.push('Ethanol-Combustion Metabolism');
-  }
-  if (p2.microbes.woodDecomposerFungi) {
-    traits.push('Symbiotic White-Rot Mycelium');
+  if (p2.ocular.colorBlindnessMode !== 'none') {
+    traits.push(`Dichromat (${p2.ocular.colorBlindnessMode.replace(/_/g, ' ')})`);
+  } else {
+    traits.push('Trichromat 3-Cone Eye (Red-in-Middle Cheat)');
   }
   if (p2.genetics.dnaPresent) {
-    traits.push('Double-Helix DNA Caste Memory');
-  } else if (p2.genetics.rnaPresent) {
-    traits.push('Hyper-Mutating RNA Polymorphism');
+    traits.push('Double-Helix DNA Memory');
+  } else {
+    traits.push('Hyper-Mutating RNA');
   }
-  if (p1.electricityStrength >= 1.4) {
-    traits.push('Bio-Electric Nervous Arcs');
+
+  if (archetype === 'goldilocks_sky_whale_eden') {
+    return {
+      name: 'Magrathean Aero-Cetaceans & Spore-Kin',
+      morphology: 'Buoyant Sky Whales cruising above bipedal trichromatic builders',
+      diet: 'Aero-plankton, timber sap & roasted Döner tubers',
+      preferredStrata: 'aerostat_sky',
+      primaryColorHex: '#38BDF8',
+      secondaryColorHex: '#F59E0B',
+      speedMultiplier: 1.15,
+      armorRating: 1.25,
+      traits,
+      loreSummary:
+        'Formed on the 4th Goldilocks planet around a Yellow Sun with a dense, buoyant atmosphere—home to majestic Sky Whales and literal-minded engineers.',
+    };
   }
 
   if (archetype === 'venusian_greenhouse') {
     return {
       name: 'Venerian Chitin-Delvers',
-      morphology: 'Armor-plated subterranean hexapods with acid-filtering spiracles',
-      diet: 'Sulfur-crust chemosynthesis & underground fungal tubers',
+      morphology: 'Armor-plated subterranean hexapods beneath sulfuric clouds',
+      diet: 'Sulfur-crust chemosynthesis & underground fungi',
       preferredStrata: 'subterranean',
       primaryColorHex: '#EAB308',
       secondaryColorHex: '#78350F',
@@ -289,70 +365,22 @@ export function synthesizeMainAlien(
       armorRating: 1.6,
       traits,
       loreSummary:
-        'Because carbon/sulfur bacteria were forgotten in Phase II, these resilient aliens evolved beneath a boiling Venusian acid sky, excelling at deep ant-farm bunker construction.',
-    };
-  }
-
-  if (archetype === 'super_dense_crusher') {
-    return {
-      name: 'Baryon Tortoise-Kin',
-      morphology: 'Squat, ultra-dense eight-legged litho-crawlers with hydraulic limbs',
-      diet: 'Compressed carbon seams & heavy-metal lichens',
-      preferredStrata: 'subterranean',
-      primaryColorHex: '#38BDF8',
-      secondaryColorHex: '#1E293B',
-      speedMultiplier: 0.72,
-      armorRating: 1.9,
-      traits,
-      loreSummary:
-        'Forged on a planet that grew "too dense", they cannot jump or fly, and arrows drop swiftly—making them masters of heavy siege engineering and subterranean highways.',
-    };
-  }
-
-  if (archetype === 'great_fire_inferno' || archetype === 'purple_retinal_world') {
-    return {
-      name: 'Pyro-Retinal Myconids',
-      morphology: 'Violet-plumed symbionts born amidst burning Carboniferous lignin forests',
-      diet: 'Charred wood-ash, retinal sap & roasted spores',
-      preferredStrata: 'surface',
-      primaryColorHex: '#A855F7',
-      secondaryColorHex: '#EF4444',
-      speedMultiplier: 1.15,
-      armorRating: 1.1,
-      traits,
-      loreSummary:
-        'Evolved under purple skies where un-rotted wood fueled the Great Fire; they thrive in timber harvesting, ash-fertilized farming, and ranged warfare.',
-    };
-  }
-
-  if (archetype === 'alcohol_ferment_sea') {
-    return {
-      name: 'Zymurgic Skitter-Guild',
-      morphology: 'Amphibious ethanol-fueled crustaceans with pressurized distiller shells',
-      diet: 'Fermented nectar, kelp sugars & hydro-carbons',
-      preferredStrata: 'amphibious',
-      primaryColorHex: '#2DD4BF',
-      secondaryColorHex: '#F59E0B',
-      speedMultiplier: 1.35,
-      armorRating: 0.95,
-      traits,
-      loreSummary:
-        'Born from fermented alcohol seas, their hyper-metabolic colonies build rapid SimCity-like canal/road traffic networks and volatile alchemical engines.',
+        'Because sulfur/carbon bacteria were forgotten in Phase II, these resilient aliens burrow beneath a 45-bar Venusian acid sky.',
     };
   }
 
   return {
-    name: 'Aethelian Spore-Architects',
-    morphology: 'Bioluminescent insectoid-fungal builders with crystalline antennae',
-    diet: 'Decomposed humus, timber sap & hydro-minerals',
+    name: 'Chiron Myco-Terrans',
+    morphology: 'Isometric carapace-clad colonists with compound trichromatic eyes',
+    diet: 'Lignin timber, fungal spores & steam-roasted Döner',
     preferredStrata: 'surface',
     primaryColorHex: '#10B981',
     secondaryColorHex: '#06B6D4',
-    speedMultiplier: 1.05,
+    speedMultiplier: 1.0,
     armorRating: 1.2,
     traits,
     loreSummary:
-      'A balanced DNA-stabilized alien civilization equally adept at SimCity urban logistics, Age of Empires forestry and castle sieges, and Dwarf Fortress underground mining.',
+      `Evolved under a ${p1.starSpectralClass} (${p1.sunMassSolar.toFixed(2)} M☉) with ${p2.atmosphericPhysics.surfacePressureBar} bar atmospheric pressure and water boiling at ${p2.atmosphericPhysics.waterBoilingPointC}°C.`,
   };
 }
 
@@ -360,82 +388,142 @@ export function createInitialCosmosState(): CosmosGameState {
   const phase1: Phase1GenesisState = {
     turnCount: 0,
     timeArrow: 'forward',
+    inflationFieldPhi: 1.4,
+    cpAsymmetry: 0.65,
+    su3StrongCoupling: 1.0,
     gravityStrength: 1.0,
     electricityStrength: 1.0,
-    molecularCloudDensity: 45,
-    bigBangEnergy: 80,
+    molecularCloudDensity: 55,
     sunIgnited: false,
-    starSpectralClass: 'Proto-Nebula Core',
+    sunMassSolar: 1.0,
+    sunLuminositySolar: 1.0,
+    starSpectralClass: '1.0 M☉ Yellow G-Type Sun',
     starColorHex: '#F59E0B',
     synthesizedElements: {
       hydrogen: 75,
-      carbon: 25,
-      oxygen: 20,
-      sulfur: 15,
-      iron: 20,
-      silicates: 25,
+      carbon: 35,
+      oxygen: 30,
+      sulfur: 20,
+      iron: 25,
+      silicates: 30,
     },
   };
 
+  const worlds = updateCandidateWorldsForSun(CANDIDATE_WORLDS, phase1.sunMassSolar);
+
   const phase2: Phase2SolarAndChemistryState = {
     turnCount: 0,
-    selectedWorldType: 'rocky',
+    selectedWorldType: 'goldilocks_earth',
     worldLockedInStone: false,
-    densityG: 1.0,
+    densityG: 1.35,
     molecules: {
-      h2o: 50,
+      h2o: 68,
       alcohol: 5,
-      acidity: 25,
-      co2Sulfur: 30,
-      oxygen: 22,
+      acidity: 22,
+      co2Sulfur: 28,
+      oxygen: 24,
       carbonComplexity: 'organic_chains',
     },
     genetics: {
       rnaPresent: true,
-      dnaPresent: false,
-      mutationRate: 45,
+      dnaPresent: true,
+      mutationRate: 18,
     },
     microbes: {
-      carbonSulfurBacteria: false,
+      carbonSulfurBacteria: true,
       retinalPurpleMicrobes: true,
-      woodDecomposerFungi: false,
+      woodDecomposerFungi: true,
     },
-    deadWoodStrata: 30,
+    ocular: {
+      cones: {
+        shortBlue: true,
+        mediumGreen: true,
+        longRed: true,
+        redInMiddleCheatActive: true,
+      },
+      rodsPresent: true,
+      kokosjaSlepotaActive: false,
+      colorBlindnessMode: 'none',
+      contrastIllusionLevel: 35,
+      canSeeStarsAtNight: true,
+      simulateAlienVisionFilter: false,
+    },
+    deadWoodStrata: 35,
     greatFireActive: false,
-    emergentArchetype: 'purple_retinal_world',
-    diagnosticAlerts: [
-      'Early Retinal Flora gives the world a vivid purple hue.',
-      'Warning: Neither carbon-fixing bacteria nor wood-eating mushrooms have been prompted yet!',
-    ],
+    atmosphericPhysics: {
+      surfaceGravityMS2: 13.24,
+      escapeVelocityKmS: 15.3,
+      surfacePressureBar: 2.1,
+      airDensityKgM3: 2.45,
+      scaleHeightKm: 6.8,
+      opticalDepthTau: 0.85,
+      equilibriumTempK: 255,
+      surfaceTempC: 18.5,
+      waterBoilingPointC: 121.8,
+      archimedesBuoyancyIndex: 1.94,
+      skyWhalesPresent: true,
+      aerodynamicDragMultiplier: 2.0,
+    },
+    emergentArchetype: 'goldilocks_sky_whale_eden',
+    diagnosticAlerts: [],
   };
+
+  phase2.atmosphericPhysics = solveJuliaAtmosphericPhysics(phase1, phase2, worlds, 0);
+  const evalRes = evaluatePlanetArchetype(phase2, 1.0);
+  phase2.emergentArchetype = evalRes.archetype;
+  phase2.diagnosticAlerts = evalRes.alerts;
 
   const mainAlien = synthesizeMainAlien(phase1, phase2);
 
   return {
     phase: 1,
     globalTurn: 1,
+    activePlayerTurn: 'player1',
+    lastPlayerMove: null,
     entropyIndex: 18,
     lastEntropyCounterLaw:
-      'Primordial Vacuum Dilation — Entropy seeks to disperse the molecular cloud before stellar ignition.',
+      'Entropy Optimizer AI awaits your first mechanics so it can over-optimize them into extinction.',
+    phaseTransitionBanner: null,
     phase1,
     phase2,
-    candidateWorlds: CANDIDATE_WORLDS,
+    candidateWorlds: worlds,
     mainAlien,
     phase3: {
       turnCount: 0,
-      eraTitle: 'Dawn of the Ant-Farm Colony',
+      eraTitle: 'Dawn of the Alien Ant-Farm',
+      season: 'spring',
+      cloudCover: 35,
+      agencyLevel: 45,
+      mathRules: {
+        collatzValue: 7,
+        collatzTrajectory: [7, 22, 11, 34, 17, 52, 26, 13, 40, 20, 10, 5, 16, 8, 4, 2, 1],
+        powerTowerA: 2,
+        powerTowerB: 2,
+        powerTowerC: 2,
+        powerTowerDisplay: '2^(2^2) = 16x Causal Complexity',
+      },
+      climate: {
+        fossilFuelBurned: 0,
+        globalWarmingDeltaC: 0,
+        polarIceRemaining: 100,
+        seaLevelY: 1.0,
+        drownedUnitsCount: 0,
+      },
       divergenceScores: {
-        simCityCivic: 25,
+        alphaCentauriXenobio: 25,
         aoeEmpireWar: 25,
-        dwarfSubterranean: 30,
-        ecologicalChaos: 20,
+        rimWorldColony: 25,
+        blackAndWhiteMiracles: 25,
       },
       resources: {
-        timber: 120,
-        stoneOre: 100,
-        biomass: 140,
-        trafficFlow: 65,
-        colonyPopulation: 48,
+        timber: 140,
+        treesRemainingOnIsland: 85,
+        stoneOre: 110,
+        biomass: 150,
+        oilBarrels: 40,
+        donerKebabs: 12,
+        trafficFlow: 70,
+        colonyPopulation: 54,
       },
       weather: {
         windSpeed: 18,
@@ -448,24 +536,49 @@ export function createInitialCosmosState(): CosmosGameState {
       implementedFeatures: [
         {
           id: 'feat-genesis-nexus',
-          name: 'Central Alien Ant-Farm Nexus',
+          name: 'Founding Ant-Farm Command Nexus',
           category: 'subterranean',
           createdBy: 'player1',
-          activePrompt: 'Founding subterranean brood-chamber and surface gatehouse',
-          passiveLaw: 'Autonomous foraging and tunneling instincts',
+          activePrompt: 'Subterranean brood-warren & stepped high-ground command post',
+          passiveLaw: 'Autonomous harvesting and tunneling instincts',
+          intendedGoal: 'Establish central alien colony hub',
+          missingEngineeringLink: 'None (Hard-coded scaffolding)',
+          literalOutcome: 'Colonists excavate stepped StarCraft-style voxel blocks and gather crystals.',
+          alphaCentauriQuote:
+            '"The substructure of the universe is not merely matter, but information." — Academician Prokhor Zakharov',
+          entropyOverOptimizationWarning:
+            'Entropy AI will attempt to over-mine the local timber and ore unless balanced.',
+          noBacksiesLocked: true,
           status: 'thriving',
           efficiency: 100,
-          synergyNotes: ['Core colony hub anchored to the locked planetary strata'],
+          synergyNotes: ['Permanent No-Backsies Founding Node'],
           voxelEffect: 'underground_warren',
           turnCreated: 0,
         },
       ],
       agents: [
         {
+          id: 'ag-whale-1',
+          faction: 'colony',
+          role: 'sky_whale',
+          label: 'Magrathean Sky Whale',
+          x: 9,
+          y: 8,
+          z: 9,
+          vx: 0.35,
+          vz: 0.25,
+          hp: 250,
+          maxHp: 250,
+          speed: 0.8,
+          accuracy: 1.0,
+          state: 'soaring',
+          statusEffect: 'Floating via Archimedes Buoyancy (Oh no, not again!)',
+        },
+        {
           id: 'ag-1',
           faction: 'colony',
           role: 'alien_colonist',
-          label: 'Brood Forager Alpha',
+          label: 'Drone Harvester #1',
           x: 11,
           y: 5,
           z: 11,
@@ -474,14 +587,14 @@ export function createInitialCosmosState(): CosmosGameState {
           hp: 100,
           maxHp: 100,
           speed: 1.0,
-          accuracy: 0.8,
+          accuracy: 0.85,
           state: 'working',
         },
         {
           id: 'ag-2',
           faction: 'colony',
           role: 'tunnel_digger',
-          label: 'Deep-Strata Delver',
+          label: 'Sub-Strata Burrower',
           x: 10,
           y: 2,
           z: 12,
@@ -497,10 +610,10 @@ export function createInitialCosmosState(): CosmosGameState {
           id: 'ag-3',
           faction: 'colony',
           role: 'lumberjack',
-          label: 'Spore-Timber Harvester',
-          x: 14,
+          label: 'Timber Drone #2',
+          x: 6,
           y: 5,
-          z: 9,
+          z: 14,
           vx: 0.25,
           vz: -0.35,
           hp: 95,
@@ -518,21 +631,41 @@ export function createInitialCosmosState(): CosmosGameState {
         id: 'chron-0',
         turnNumber: 0,
         phase: 1,
-        p1Active: 'Primordial Singularity',
-        p1Passive: 'Symmetry Scaffolding',
-        p2Active: 'Quantum Fluctuations',
-        p2Passive: 'Vacuum Potential',
-        entropyLaw: 'The Great Silence awaits thermodynamic decay.',
-        headline: 'Before the Pie, First Prompt the Universe',
+        actingPlayer: 'both',
+        p1Active: 'SU(3) Quark Confinement & Cosmic Inflation',
+        p1Passive: 'CP-Violation Time Asymmetry',
+        p2Active: '1.0 M☉ Yellow Sun Molecular Cloud',
+        p2Passive: 'N-Body Gravitation & U(1) Electromagnetism',
+        entropyLaw: 'The Entropy Optimizer AI waits to optimize your creations into stillness.',
+        headline: 'First We Must Prompt the Universe (Baseline Initialized)',
         narrative:
-          'Phase I begins in the aftermath of the Big Bang. Work together to define time direction, gravity, electricity, and molecular clouds so a Sun and Solar System can emerge.',
+          'Welcome to FIRST WE MUST PROMPT THE UNIVERSE (Satisfractured · The Alien Ant Farm). Phase I establishes Big Bang inflation, time asymmetry, and SU(3) nuclear binding to ignite the Sun and feed Phase II’s N-body Solar System.',
         synergies: [
           {
-            source: 'Player 1 & Player 2',
-            target: 'Molecular Cloud Scaffolding',
-            outcome: 'Combine Active & Passive physics declarations to ignite the Sun.',
+            source: 'Initial Universe Baseline',
+            target: '3-Phase Causal Chain',
+            outcome: 'All divergence scores initialized at 25. Every move is permanent (No Backsies!).',
             impactType: 'synergy',
           },
+        ],
+        divergenceSnapshot: {
+          alphaCentauriXenobio: 25,
+          aoeEmpireWar: 25,
+          rimWorldColony: 25,
+          blackAndWhiteMiracles: 25,
+        },
+        timestamp: 'Turn 0',
+      },
+    ],
+    oracleHistory: [
+      {
+        id: 'ora-0',
+        role: 'assistant',
+        content:
+          'Galactic Guide & JuliaPhysics / Wolfram Datalink online. Ask me about SU(3) quark confinement, why the 4th planet around a Yellow Sun sits in the Goldilocks zone, why forgetting Rod photoreceptors causes Kokošja Slepota (night blindness), or why Hero of Alexandria and Taqi al-Din used the first steam turbines for Döner kebab spits instead of cars!',
+        wolframEquations: [
+          'L_⋆ / L_☉ = (M_⋆ / M_☉)^3.5  →  r_Goldilocks ≈ 1.0 AU (4th Orbit)',
+          'T_surf = T_eq · (1 + 0.75 · τ)^0.25  |  dP/dz = -ρ · g',
         ],
         timestamp: '00:00',
       },
@@ -540,632 +673,725 @@ export function createInitialCosmosState(): CosmosGameState {
   };
 }
 
-/**
- * Deterministic + AI-assisted turn compiler so every prompt keyword ("orc", "archer",
- * "rain", "wind", "drought", "wood", "traffic", "simcity", "acid", "bacteria",
- * "mushroom", "dense", "dna", "rna", "alcohol", "h2o") immediately triggers
- * accurate mechanical changes on top of any server-side Gemini response.
- */
 export function applyDeterministicAndAiWeave(
   state: CosmosGameState,
   p1Active: string,
   p1Passive: string,
   p2Active: string,
   p2Passive: string,
-  aiData?: Record<string, unknown> | null
+  aiData?: Record<string, unknown> | null,
+  actingMode: 'player1' | 'player2' | 'both' = 'both'
 ): CosmosGameState {
-  const combined = `${p1Active} ${p1Passive} ${p2Active} ${p2Passive}`.toLowerCase();
+  const effectiveText =
+    actingMode === 'player1'
+      ? `${p1Active} ${p1Passive}`
+      : actingMode === 'player2'
+        ? `${p2Active} ${p2Passive}`
+        : `${p1Active} ${p1Passive} ${p2Active} ${p2Passive}`;
+  const combined = effectiveText.toLowerCase();
+
   const next: CosmosGameState = JSON.parse(JSON.stringify(state));
   next.globalTurn += 1;
+  next.phaseTransitionBanner = null;
+
+  // Toggle next active player in move-based mode
+  if (actingMode === 'player1') {
+    next.activePlayerTurn = 'player2';
+  } else if (actingMode === 'player2') {
+    next.activePlayerTurn = 'player1';
+  }
+
+  // Advance 3n+1 (Collatz) & a^(b^c) mathematical state
+  const curN = next.phase3.mathRules.collatzValue;
+  const nextN = curN % 2 === 0 ? curN / 2 : 3 * curN + 1;
+  next.phase3.mathRules.collatzValue = nextN <= 1 ? 27 : nextN;
+  next.phase3.mathRules.collatzTrajectory = [
+    ...next.phase3.mathRules.collatzTrajectory.slice(-11),
+    next.phase3.mathRules.collatzValue,
+  ];
 
   const synergies: CausalSynergyItem[] = [];
   let headline = '';
   let narrative = '';
   let entropyCounterLaw = '';
+  let openLoopholeHint =
+    'Watch your wording: omit "round" or "frame" and the other player can twist it!';
 
   if (next.phase === 1) {
     next.phase1.turnCount += 1;
-    // Time direction
-    if (combined.includes('revers') || combined.includes('echo') || combined.includes('symmetr')) {
-      next.phase1.timeArrow = 'reversible_echo';
+
+    if (combined.includes('inflat') || combined.includes('phi') || combined.includes('expand')) {
+      next.phase1.inflationFieldPhi = Math.min(2.8, +(next.phase1.inflationFieldPhi + 0.45).toFixed(2));
       synergies.push({
-        source: 'Time Symmetry Prompt',
-        target: 'Cosmic Arrow of Time',
-        outcome: 'Time flows with reversible quantum echoes, reducing Entropy decay by 35%.',
+        source: 'Cosmic Inflation (φ Field)',
+        target: 'Quantum Fluctuations',
+        outcome: `Exponential space expansion (φ = ${next.phase1.inflationFieldPhi}) seeds galaxy filaments!`,
         impactType: 'synergy',
       });
-    } else if (combined.includes('dilat') || combined.includes('slow')) {
-      next.phase1.timeArrow = 'dilated';
-    } else {
+    }
+
+    if (combined.includes('su(3)') || combined.includes('quark') || combined.includes('strong') || combined.includes('gluon')) {
+      next.phase1.su3StrongCoupling = Math.min(1.9, +(next.phase1.su3StrongCoupling + 0.25).toFixed(2));
+      synergies.push({
+        source: 'SU(3)_C Color Confinement',
+        target: 'Baryon & Stellar Nucleosynthesis',
+        outcome: 'Quarks bind into protons & neutrons, enabling p-p chain fusion inside the Sun!',
+        impactType: 'synergy',
+      });
+    }
+
+    if (combined.includes('revers') || combined.includes('echo')) {
+      next.phase1.timeArrow = 'reversible_echo';
+    } else if (combined.includes('cp') || combined.includes('asymmetr') || combined.includes('forward')) {
       next.phase1.timeArrow = 'forward';
+      next.phase1.cpAsymmetry = 0.85;
     }
 
-    // Gravity & Electricity
-    if (combined.includes('heavy') || combined.includes('dense') || combined.includes('compress') || combined.includes('gravity')) {
-      next.phase1.gravityStrength = Math.min(2.6, +(next.phase1.gravityStrength + 0.35).toFixed(2));
-    }
-    if (combined.includes('electric') || combined.includes('lightning') || combined.includes('plasma') || combined.includes('magnet')) {
-      next.phase1.electricityStrength = Math.min(2.5, +(next.phase1.electricityStrength + 0.4).toFixed(2));
+    // Determine Sun Mass (M_sun) & Spectral Type
+    if (combined.includes('blue') || combined.includes('1.6') || combined.includes('giant')) {
+      next.phase1.sunMassSolar = 1.65;
+      next.phase1.starSpectralClass = '1.65 M☉ Blue-White F/A Star';
+      next.phase1.starColorHex = '#38BDF8';
+    } else if (combined.includes('red') || combined.includes('dwarf') || combined.includes('0.5')) {
+      next.phase1.sunMassSolar = 0.55;
+      next.phase1.starSpectralClass = '0.55 M☉ Red-Orange K/M Dwarf';
+      next.phase1.starColorHex = '#EF4444';
+    } else {
+      next.phase1.sunMassSolar = 1.0;
+      next.phase1.starSpectralClass = '1.00 M☉ Yellow G-Type Sun';
+      next.phase1.starColorHex = '#F59E0B';
     }
 
-    // Elements
-    next.phase1.molecularCloudDensity = Math.min(100, next.phase1.molecularCloudDensity + 35);
-    next.phase1.synthesizedElements.carbon = Math.min(100, next.phase1.synthesizedElements.carbon + 28);
-    next.phase1.synthesizedElements.oxygen = Math.min(100, next.phase1.synthesizedElements.oxygen + 25);
-    next.phase1.synthesizedElements.iron = Math.min(100, next.phase1.synthesizedElements.iron + 22);
-    next.phase1.synthesizedElements.silicates = Math.min(100, next.phase1.synthesizedElements.silicates + 25);
-    next.phase1.synthesizedElements.sulfur = Math.min(100, next.phase1.synthesizedElements.sulfur + 20);
-
-    // Ignite Sun!
+    const bounds = computeGoldilocksBoundsAU(next.phase1.sunMassSolar);
+    next.phase1.sunLuminositySolar = bounds.luminositySolar;
     next.phase1.sunIgnited = true;
-    next.phase1.starSpectralClass =
-      next.phase1.electricityStrength > 1.35
-        ? 'Class-F Blue-Gold Magnetar Sun'
-        : next.phase1.gravityStrength > 1.35
-          ? 'Class-K Dense Amber Giant'
-          : 'Class-G Luminous Sol';
-    next.phase1.starColorHex =
-      next.phase1.electricityStrength > 1.35 ? '#38BDF8' : '#F59E0B';
+    next.candidateWorlds = updateCandidateWorldsForSun(
+      next.candidateWorlds,
+      next.phase1.sunMassSolar
+    );
 
-    synergies.push({
-      source: `P1 (${p1Active.slice(0, 28)}) + P2 (${p2Active.slice(0, 28)})`,
-      target: 'Stellar Nucleosynthesis',
-      outcome: `Ignited ${next.phase1.starSpectralClass}! Outflowing Carbon, Oxygen, Iron & Silicates into the Phase II Solar System.`,
-      impactType: 'synergy',
-    });
+    // Automatically select the Goldilocks planet for Phase II!
+    const goldilocksWorld = next.candidateWorlds.find((w) => w.inGoldilocksZone);
+    if (goldilocksWorld) {
+      next.phase2.selectedWorldType = goldilocksWorld.id;
+    }
 
-    entropyCounterLaw =
-      (aiData?.entropyCounterLaw as string) ||
-      'Entropy injects Cosmic Redshift Cooling, trying to thin the proto-planetary disk.';
-    headline =
-      (aiData?.headline as string) ||
-      `Stellar Ignition Achieved: ${next.phase1.starSpectralClass} Born!`;
-    narrative =
-      (aiData?.narrative as string) ||
-      `Working together across the primordial molecular cloud, both players established a ${next.phase1.timeArrow} arrow of time (${next.phase1.gravityStrength}x Gravity, ${next.phase1.electricityStrength}x Electricity). The Sun has ignited and heavy elements now outflow into the Phase II Solar System!`;
-    next.entropyIndex = Math.max(8, Math.min(95, next.entropyIndex + 4));
+    next.phase3.divergenceScores.alphaCentauriXenobio += 8;
+    next.phase3.divergenceScores.blackAndWhiteMiracles += 6;
+
+    // Seamless Phase I -> Phase II Automatic Outflow!
+    next.phase = 2;
+    next.phaseTransitionBanner = {
+      fromPhase: 1,
+      toPhase: 2,
+      title: `Phase I → Phase II Outflow: ${next.phase1.starSpectralClass} Ignited!`,
+      summary: `SU(3) nuclear binding and Cosmic Inflation birthed a ${next.phase1.sunMassSolar.toFixed(2)} M☉ Sun (L = ${next.phase1.sunLuminositySolar} L☉). By N-Body laws, ${goldilocksWorld?.name || 'the 4th Planet'} now sits in the Goldilocks Zone!`,
+    };
+
+    headline = `Big Bang & SU(3) Outflow: ${next.phase1.starSpectralClass} Forms Solar System!`;
+    narrative = `Phase I complete! With SU(3) quark confinement, CP time asymmetry, and ${next.phase1.sunMassSolar.toFixed(2)} M☉ stellar mass, the Solar System has coalesced. Moving automatically into Phase II (Solar System & Ocular/Molecular Evolution).`;
+    entropyCounterLaw = 'Entropy induces radiative cooling across the outer proto-planetary disk.';
   } else if (next.phase === 2) {
     next.phase2.turnCount += 1;
 
-    // Density / "Too Dense"
-    if (
-      combined.includes('dense') ||
-      combined.includes('heavy') ||
-      combined.includes('iron') ||
-      combined.includes('osmium') ||
-      combined.includes('2.4g') ||
-      combined.includes('crush')
-    ) {
-      next.phase2.densityG = Math.min(2.8, +(next.phase2.densityG + 0.85).toFixed(2));
-      synergies.push({
-        source: 'Heavy Core Accretion',
-        target: 'Planetary Density',
-        outcome: `"Oh, we are too dense!" Surface gravity surged to ${next.phase2.densityG.toFixed(2)}G—flattening terrain and grounding future aerial units.`,
-        impactType: 'planetary_constraint',
-      });
+    if (combined.includes('dense') || combined.includes('1.4') || combined.includes('2.4') || combined.includes('whale')) {
+      next.phase2.densityG = combined.includes('2.4') ? 2.4 : Math.max(1.42, next.phase2.densityG);
     }
 
-    // Acidity / Sulfur / Venus
-    if (
-      combined.includes('acid') ||
-      combined.includes('sulfur') ||
-      combined.includes('venus') ||
-      combined.includes('co2') ||
-      combined.includes('volcan')
-    ) {
+    if (combined.includes('acid') || combined.includes('venus') || combined.includes('co2') || combined.includes('sulfur')) {
       next.phase2.molecules.acidity = Math.min(100, next.phase2.molecules.acidity + 38);
-      next.phase2.molecules.co2Sulfur = Math.min(100, next.phase2.molecules.co2Sulfur + 40);
+      next.phase2.molecules.co2Sulfur = Math.min(100, next.phase2.molecules.co2Sulfur + 42);
     }
 
-    // H2O
-    if (combined.includes('h2o') || combined.includes('water') || combined.includes('ocean') || combined.includes('aquifer') || combined.includes('rain')) {
-      next.phase2.molecules.h2o = Math.min(100, next.phase2.molecules.h2o + 28);
+    if (combined.includes('zero carbon-fixing') || combined.includes('forgot bacteria') || combined.includes('no bacteria')) {
+      next.phase2.microbes.carbonSulfurBacteria = false;
+    } else if (combined.includes('bacteria')) {
+      next.phase2.microbes.carbonSulfurBacteria = true;
     }
 
-    // Alcohol
-    if (combined.includes('alcohol') || combined.includes('ethanol') || combined.includes('ferment') || combined.includes('yeast') || combined.includes('wine')) {
-      next.phase2.molecules.alcohol = Math.min(100, next.phase2.molecules.alcohol + 50);
-      synergies.push({
-        source: 'Anaerobic Sugar Fermentation',
-        target: 'Planetary Hydrosphere',
-        outcome: 'Oceans fermented into volatile Alcohol Seas with flammable vapors!',
-        impactType: 'synergy',
-      });
-    }
-
-    // DNA / RNA
-    if (combined.includes('dna') || combined.includes('double-helix') || combined.includes('heredit')) {
-      next.phase2.genetics.dnaPresent = true;
-      next.phase2.genetics.mutationRate = 15;
-    }
-    if (combined.includes('rna')) {
-      next.phase2.genetics.rnaPresent = true;
-      if (!combined.includes('dna') && !next.phase2.genetics.dnaPresent) {
-        next.phase2.genetics.mutationRate = 82;
-      }
-    }
-
-    // Bacteria & Mushrooms (or explicitly forgetting them!)
-    const explicitlyNoDecomposers =
-      combined.includes('zero wood-eating') ||
-      combined.includes('no wood-eating') ||
-      combined.includes('no mushroom') ||
-      combined.includes('forgot bacteria') ||
-      combined.includes('without carbon-fixing') ||
-      combined.includes('zero sulfur');
-
-    if (!explicitlyNoDecomposers) {
-      if (combined.includes('bacteria') || combined.includes('microbe') || combined.includes('cyanobacteria')) {
-        next.phase2.microbes.carbonSulfurBacteria = true;
-        next.phase2.molecules.acidity = Math.max(10, next.phase2.molecules.acidity - 22);
-      }
-      if (combined.includes('mushroom') || combined.includes('fungi') || combined.includes('white-rot') || combined.includes('decompos')) {
-        next.phase2.microbes.woodDecomposerFungi = true;
-        next.phase2.deadWoodStrata = Math.max(5, next.phase2.deadWoodStrata - 35);
-      }
-    } else {
-      if (combined.includes('zero wood-eating') || combined.includes('no mushroom')) {
-        next.phase2.microbes.woodDecomposerFungi = false;
-      }
-      if (combined.includes('without carbon-fixing') || combined.includes('zero sulfur')) {
-        next.phase2.microbes.carbonSulfurBacteria = false;
-      }
-    }
-
-    // Purple flora & woody lignin -> The Great Fire
-    if (combined.includes('purple') || combined.includes('retinal') || combined.includes('wood') || combined.includes('lignin') || combined.includes('tree')) {
-      next.phase2.microbes.retinalPurpleMicrobes = true;
+    if (combined.includes('zero wood-eating') || combined.includes('no mushroom') || combined.includes('forgot mushroom')) {
+      next.phase2.microbes.woodDecomposerFungi = false;
       next.phase2.molecules.carbonComplexity = 'woody_lignin';
-      next.phase2.molecules.oxygen = Math.min(100, next.phase2.molecules.oxygen + 25);
-      if (!next.phase2.microbes.woodDecomposerFungi) {
-        next.phase2.deadWoodStrata = Math.min(100, next.phase2.deadWoodStrata + 45);
-      }
-    }
-
-    // Check Great Fire trigger
-    if (
-      next.phase2.molecules.carbonComplexity === 'woody_lignin' &&
-      !next.phase2.microbes.woodDecomposerFungi &&
-      next.phase2.deadWoodStrata >= 50
-    ) {
+      next.phase2.deadWoodStrata = 78;
       next.phase2.greatFireActive = true;
       synergies.push({
-        source: 'Woody Lignin + Zero Wood-Eating Mushrooms',
-        target: 'Global Carbon Strata',
-        outcome: 'THE GREAT FIRE IGNITES! Centuries of un-rotted purple timber erupt into a planetary conflagration!',
-        impactType: 'sabotage',
+        source: 'Purple Lignin Trees + Zero Wood-Eating Mushrooms',
+        target: 'Planetary Carbon Strata',
+        outcome: 'THE GREAT FIRE IGNITES! Un-rotted timber burns across the continents and buries deep oil/coal seams!',
+        impactType: 'climate_collapse',
       });
-    } else if (next.phase2.microbes.woodDecomposerFungi) {
+    } else if (combined.includes('mushroom') || combined.includes('fungi')) {
+      next.phase2.microbes.woodDecomposerFungi = true;
       next.phase2.greatFireActive = false;
+    }
+
+    // Evolution of the Eye: 3 Cones + Rods vs. Kokošja Slepota (Night Blindness)
+    if (
+      combined.includes('kokos') ||
+      combined.includes('slepota') ||
+      combined.includes('forget rod') ||
+      combined.includes('no rod') ||
+      combined.includes('night blind')
+    ) {
+      next.phase2.ocular.rodsPresent = false;
+      next.phase2.ocular.kokosjaSlepotaActive = true;
+      next.phase2.ocular.canSeeStarsAtNight = false;
+      next.phase2.ocular.simulateAlienVisionFilter = true;
       synergies.push({
-        source: 'Wood-Eating Mushrooms & Bacteria',
-        target: 'Dead Lignin Timber',
-        outcome: 'Fungi digest the dead wood into rich humus soil, averting The Great Fire!',
+        source: 'Forgotten Rod Photoreceptors (No Rhodopsin)',
+        target: 'Alien Ocular Evolution',
+        outcome: 'KOKOŠJA SLEPOTA (Night Blindness)! Aliens lose dark contour vision and CANNOT SEE THE STARS at night!',
+        impactType: 'loophole_twist',
+      });
+    } else if (combined.includes('rod') || combined.includes('rhodopsin') || combined.includes('contour')) {
+      next.phase2.ocular.rodsPresent = true;
+      next.phase2.ocular.kokosjaSlepotaActive = false;
+      next.phase2.ocular.canSeeStarsAtNight = true;
+    }
+
+    if (combined.includes('missing red') || combined.includes('color blind') || combined.includes('dichromat')) {
+      next.phase2.ocular.cones.longRed = false;
+      next.phase2.ocular.colorBlindnessMode = 'protanopia_no_red';
+      next.phase2.ocular.simulateAlienVisionFilter = true;
+      synergies.push({
+        source: 'Missing L-Cone (Red Distribution)',
+        target: 'Trichromatic Vision',
+        outcome: 'Protanopia Color Blindness! Aliens confuse red enemies/fruit with green foliage.',
+        impactType: 'loophole_twist',
+      });
+    } else if (combined.includes('3 color') || combined.includes('trichromat') || combined.includes('red-in-the-middle')) {
+      next.phase2.ocular.cones = {
+        shortBlue: true,
+        mediumGreen: true,
+        longRed: true,
+        redInMiddleCheatActive: true,
+      };
+      next.phase2.ocular.colorBlindnessMode = 'none';
+      synergies.push({
+        source: '3-Cone Eye + "Red in the Middle" Cheat',
+        target: 'Relative Contrast Perception',
+        outcome: 'Overlapping M/L cones enable high-contrast fruit/target spotting alongside optical contrast illusions!',
         impactType: 'synergy',
       });
     }
 
-    const evalResult = evaluatePlanetArchetype(next.phase2);
-    next.phase2.emergentArchetype = evalResult.archetype;
-    next.phase2.diagnosticAlerts = evalResult.alerts;
-
-    if (evalResult.archetype === 'venusian_greenhouse') {
-      synergies.push({
-        source: 'High Acidity/CO2 + Forgotten Bacteria',
-        target: 'Planetary Atmosphere',
-        outcome: 'Runaway Venusian Greenhouse locked in! Surface colonies will need acid-shielding or underground burrows.',
-        impactType: 'planetary_constraint',
-      });
-    }
-
+    next.phase2.atmosphericPhysics = solveJuliaAtmosphericPhysics(
+      next.phase1,
+      next.phase2,
+      next.candidateWorlds,
+      next.phase3.climate.fossilFuelBurned
+    );
+    const evalRes = evaluatePlanetArchetype(next.phase2, next.phase3.climate.seaLevelY);
+    next.phase2.emergentArchetype = evalRes.archetype;
+    next.phase2.diagnosticAlerts = evalRes.alerts;
     next.mainAlien = synthesizeMainAlien(next.phase1, next.phase2);
 
-    entropyCounterLaw =
-      (aiData?.entropyCounterLaw as string) ||
-      'Entropy condenses Inert Silicate Crust to lock free carbon away from nascent life.';
-    headline =
-      (aiData?.headline as string) ||
-      `Planetary Alchemy: ${next.mainAlien.name} Emerge (${next.phase2.emergentArchetype.replace(/_/g, ' ').toUpperCase()})`;
-    narrative =
-      (aiData?.narrative as string) ||
-      `Across the selected world, molecular rules collided: Gravity sits at ${next.phase2.densityG.toFixed(2)}G, Acidity at ${next.phase2.molecules.acidity}%, H2O at ${next.phase2.molecules.h2o}%, and Alcohol at ${next.phase2.molecules.alcohol}%. ${next.mainAlien.loreSummary}`;
-    next.entropyIndex = Math.max(10, Math.min(95, next.entropyIndex + 5));
+    next.phase3.divergenceScores.alphaCentauriXenobio += 18;
+    next.phase3.divergenceScores.blackAndWhiteMiracles += 10;
+
+    // Seamless transition from Phase II -> Phase III once chemistry & biology are seeded!
+    if (next.phase2.turnCount >= 1) {
+      next.phase2.worldLockedInStone = true;
+      next.phase = 3;
+      next.phaseTransitionBanner = {
+        fromPhase: 2,
+        toPhase: 3,
+        title: `Phase II → Phase III Descent: ${next.mainAlien.name} Awaken!`,
+        summary: `Planet Constitution SET IN STONE (${next.phase2.atmosphericPhysics.surfacePressureBar} bar, ${next.phase2.atmosphericPhysics.surfaceTempC}°C, Sky Whales: ${next.phase2.atmosphericPhysics.skyWhalesPresent ? 'YES' : 'NO'}, Kokošja Slepota: ${next.phase2.ocular.kokosjaSlepotaActive ? 'YES' : 'NO'}). Entering the Sprite StarCraft Voxel Ant-Farm!`,
+      };
+    }
+
+    headline = `Phase II Alchemy: ${next.mainAlien.name} (${next.phase2.emergentArchetype.replace(/_/g, ' ').toUpperCase()})`;
+    narrative = `JuliaPhysics atmospheric solver locked in P₀ = ${next.phase2.atmosphericPhysics.surfacePressureBar} bar, T_surf = ${next.phase2.atmosphericPhysics.surfaceTempC}°C, H₂O boiling at ${next.phase2.atmosphericPhysics.waterBoilingPointC}°C. ${next.mainAlien.loreSummary}`;
+    entropyCounterLaw = 'Entropy seeks chemical equilibrium in the upper atmosphere.';
   } else {
-    // PHASE 3: Ant-Farm Colony & Divergent Feature Sandbox (Universe & Planet Set in Stone!)
+    // PHASE 3: Sprite StarCraft Voxel RTS, Literal AI Loopholes, Oil Global Warming & Entropy Optimizer
     next.phase3.turnCount += 1;
 
-    const hasOrcs = combined.includes('orc') || combined.includes('raider') || combined.includes('horde') || combined.includes('infantry') || combined.includes('100 ');
-    const hasArchers = combined.includes('archer') || combined.includes('legolas') || combined.includes('bow') || combined.includes('volley') || combined.includes('rampart');
-    const hasWind = combined.includes('wind') || combined.includes('gale') || combined.includes('gust') || combined.includes('storm');
-    const hasRain = combined.includes('rain') || combined.includes('monsoon') || combined.includes('downpour') || combined.includes('mud');
-    const hasDrought = combined.includes('drought') || combined.includes('draught') || combined.includes('parch') || combined.includes('arid') || combined.includes('beetle');
-    const hasWoodFarm = combined.includes('wood') || combined.includes('farm') || combined.includes('lumber') || combined.includes('timber') || combined.includes('forest');
-    const hasTrafficSimCity = combined.includes('traffic') || combined.includes('road') || combined.includes('simcity') || combined.includes('sim city') || combined.includes('highway') || combined.includes('transit') || combined.includes('commut');
-    const hasMudslideSabotage = combined.includes('mudslide') || combined.includes('toll') || combined.includes('blockade') || combined.includes('gridlock') || combined.includes('jam');
-    const hasTunnel = combined.includes('tunnel') || combined.includes('underground') || combined.includes('burrow') || combined.includes('bunker') || combined.includes('mine');
+    const hasWheel = combined.includes('wheel') || combined.includes('cart') || combined.includes('wagon');
+    const specifiedRound = combined.includes('round') || combined.includes('circular') || combined.includes('axle');
+    const explicitSquare = combined.includes('square');
 
-    // Weather updates
-    if (hasWind) {
-      next.phase3.weather.windSpeed = 78;
-      next.phase3.weather.arrowScatterPenalty = 62;
-    }
-    if (hasRain) {
-      next.phase3.weather.precipitation =
-        next.phase2.molecules.acidity >= 60 ? 'acid_rain' : 'rain';
-      next.phase3.weather.mudCoverage = 75;
-      next.phase3.weather.orcSpeedPenalty = 45;
-    } else if (hasDrought) {
-      next.phase3.weather.precipitation = 'drought';
-      next.phase3.weather.mudCoverage = 0;
-      next.phase3.weather.orcSpeedPenalty = 0;
+    const hasSteamBoiler = combined.includes('steam') || combined.includes('boiler') || combined.includes('turbine') || combined.includes('aeolipile') || combined.includes('doner') || combined.includes('döner');
+    const specifiedLocomotive = combined.includes('piston') || combined.includes('crank') || combined.includes('locomotive');
+
+    const hasHut = combined.includes('hut') || (combined.includes('mud') && combined.includes('leaves'));
+    const specifiedTruss = combined.includes('truss') || combined.includes('foundation') || combined.includes('kiln');
+
+    const hasOilBurn = combined.includes('oil') || combined.includes('coal') || combined.includes('fossil') || combined.includes('borehole') || combined.includes('melt') || combined.includes('warming');
+    const hasWoodFarm = combined.includes('wood') || combined.includes('farm') || combined.includes('lumber') || combined.includes('timber');
+    const hasOrcs = combined.includes('orc') || combined.includes('100 ') || combined.includes('raider') || combined.includes('zealot');
+    const hasArchers = combined.includes('archer') || combined.includes('rampart') || combined.includes('volley');
+    const hasRain = combined.includes('rain') || combined.includes('monsoon');
+    const hasWind = combined.includes('wind') || combined.includes('gale');
+    const hasCloudsSeasons = combined.includes('cloud') || combined.includes('season') || combined.includes('winter') || combined.includes('autumn');
+
+    // 1. THE WHEEL LOOPHOLE ("You didn't say round wheel -> Square Wheels!")
+    if (hasWheel) {
+      const makeItSquare = explicitSquare || !specifiedRound;
+      next.phase3.divergenceScores.aoeEmpireWar += 16;
+      next.phase3.divergenceScores.rimWorldColony += 22;
+
+      next.phase3.implementedFeatures.unshift({
+        id: `feat-wheel-${next.globalTurn}`,
+        name: makeItSquare ? 'Square-Wheeled Logging Wagons' : 'Greased-Axle Round Cargo Carts',
+        category: 'anthropology_tech',
+        createdBy: actingMode === 'player2' ? 'player2' : 'player1',
+        activePrompt: effectiveText,
+        passiveLaw: 'No Backsies Permanent Tech',
+        intendedGoal: 'Efficient wheeled transport for colony hauling',
+        missingEngineeringLink: makeItSquare
+          ? 'Omitted "round circular circumference + greased axle bearing"!'
+          : 'Complete first-principles rotary axle description',
+        literalOutcome: makeItSquare
+          ? 'Because "round" was omitted (or twisted by Player 2), the aliens carved SQUARE wooden wheels that thud and hop along the road at 25% speed!'
+          : 'True rotary carts roll smoothly across the isometric block roads!',
+        alphaCentauriQuote:
+          '"Technology is never adopted in a vacuum; a wheel without an axle is merely a very heavy frisbee." — Commissioner Pravin Lal',
+        entropyOverOptimizationWarning:
+          'Entropy AI will overload the wagons until the roads rut into impassable trenches.',
+        noBacksiesLocked: true,
+        status: makeItSquare ? 'loophole_quirk' : 'thriving',
+        efficiency: makeItSquare ? 28 : 165,
+        synergyNotes: [
+          makeItSquare
+            ? 'LOOPHOLE TWIST: Square wheels clunk across the voxel blocks!'
+            : 'Smooth rotary transport unlocked!',
+        ],
+        voxelEffect: 'square_wheel_cart',
+        turnCreated: next.globalTurn,
+      });
+
+      openLoopholeHint = makeItSquare
+        ? 'Square wheels locked in! Prompt a rounded lathe rim + greased axle to fix their wagons!'
+        : 'Player 2 can sabotage the carts by turning the dirt road into deep mud with Rain!';
+
+      next.phase3.agents.push({
+        id: `sq-cart-${next.globalTurn}`,
+        faction: 'colony',
+        role: 'square_wheel_wagon',
+        label: makeItSquare ? 'Square-Wheel Cart' : 'Rotary Cargo Wagon',
+        x: 8,
+        y: 5,
+        z: 10,
+        vx: makeItSquare ? 0.12 : 0.65,
+        vz: 0,
+        hp: 100,
+        maxHp: 100,
+        speed: makeItSquare ? 0.3 : 1.4,
+        accuracy: 1,
+        state: 'commuting',
+        statusEffect: makeItSquare ? 'CLUNK-CLUNK (Square Wheels!)' : 'Rolling Smoothly',
+      });
+
+      synergies.push({
+        source: makeItSquare ? 'Omitted "Round" Loophole' : 'First-Principles Axle & Rim',
+        target: 'Colony Transport',
+        outcome: makeItSquare
+          ? 'You didn’t specify a round wheel—so the aliens built SQUARE wheels!'
+          : 'Round wheels on greased axles boost logistics!',
+        impactType: makeItSquare ? 'loophole_twist' : 'synergy',
+      });
     }
 
-    // Planetary Set-in-Stone constraint checks!
-    if (next.phase2.densityG >= 1.65) {
-      next.phase3.weather.arrowScatterPenalty = Math.min(
-        90,
-        next.phase3.weather.arrowScatterPenalty + 25
+    // 2. STEAM BOILER LOOPHOLE ("Used for Döner Kebab Spits & Automatons, Not Cars!")
+    if (hasSteamBoiler) {
+      const usedForDoner = !specifiedLocomotive || combined.includes('doner') || combined.includes('döner');
+      next.phase3.divergenceScores.rimWorldColony += 24;
+      next.phase3.divergenceScores.alphaCentauriXenobio += 14;
+      next.phase3.resources.donerKebabs += 85;
+
+      next.phase3.implementedFeatures.unshift({
+        id: `feat-doner-${next.globalTurn}`,
+        name: usedForDoner
+          ? 'Taqi al-Din Steam-Powered Döner Rotisserie & Automaton'
+          : 'High-Pressure Reciprocating Steam Engine',
+        category: 'anthropology_tech',
+        createdBy: actingMode === 'player2' ? 'player2' : 'player1',
+        activePrompt: effectiveText,
+        passiveLaw: `Water boils at ${next.phase2.atmosphericPhysics.waterBoilingPointC}°C at ${next.phase2.atmosphericPhysics.surfacePressureBar} bar`,
+        intendedGoal: 'Industrial steam machine power',
+        missingEngineeringLink: usedForDoner
+          ? 'Omitted reciprocating piston, crank-rod, and wheel drivetrain!'
+          : 'Full reciprocating cylinder & crank described',
+        literalOutcome: usedForDoner
+          ? 'Just like Hero of Alexandria and 16th-century polymath Taqi al-Din, the aliens use the steam turbine to spin vertical DÖNER KEBAB meat spits and temple bird automatons instead of cars!'
+          : 'Reciprocating steam pistons power industrial colony machinery!',
+        alphaCentauriQuote:
+          '"For fifteen centuries the steam turbine spun skewered lamb before anyone thought to hitch it to a rail." — Galactic Anthropological Datalinks',
+        entropyOverOptimizationWarning:
+          'Entropy AI optimizes Döner consumption until every colonist is in a food coma and coal seams ignite global warming!',
+        noBacksiesLocked: true,
+        status: usedForDoner ? 'loophole_quirk' : 'thriving',
+        efficiency: usedForDoner ? 95 : 170,
+        synergyNotes: [
+          `At ${next.phase2.atmosphericPhysics.surfacePressureBar} bar pressure, water boils at ${next.phase2.atmosphericPhysics.waterBoilingPointC}°C.`,
+          usedForDoner
+            ? 'Aliens gather around spinning steam Döner stalls (+85 Döner Kebabs)!'
+            : 'Industrial steam locomotion online!',
+        ],
+        voxelEffect: 'doner_steam_rotisserie',
+        turnCreated: next.globalTurn,
+      });
+
+      next.phase3.agents.push({
+        id: `doner-bot-${next.globalTurn}`,
+        faction: 'colony',
+        role: 'doner_automaton',
+        label: 'Steam Döner Spit & Automaton',
+        x: 12,
+        y: 5,
+        z: 9,
+        vx: 0.05,
+        vz: 0.05,
+        hp: 140,
+        maxHp: 140,
+        speed: 0.5,
+        accuracy: 1,
+        state: 'roasting_doner',
+        statusEffect: 'Spinning Vertical Döner Kebab via Steam Jet!',
+      });
+
+      synergies.push({
+        source: 'Steam Turbine Without Piston Drivetrain',
+        target: 'Anthropological History of Technology',
+        outcome:
+          'Like Hero of Alexandria & Taqi al-Din (1551), the aliens use steam power for spinning Döner kebab spits and automatons rather than vehicles!',
+        impactType: 'loophole_twist',
+      });
+    }
+
+    // 3. INVENTING THE HUT ("Mud, Wood, Leaves" Without Frame -> Melts in Rain!)
+    if (hasHut) {
+      const meltsInRain = !specifiedTruss && (hasRain || next.phase3.weather.precipitation === 'rain');
+      next.phase3.divergenceScores.aoeEmpireWar += 14;
+      next.phase3.divergenceScores.rimWorldColony += 18;
+
+      next.phase3.implementedFeatures.unshift({
+        id: `feat-hut-${next.globalTurn}`,
+        name: specifiedTruss ? 'Framed Timber & Kiln-Brick Lodge' : 'Unframed Mud-Wood-Leaf Heap Hut',
+        category: 'traffic_civic',
+        createdBy: actingMode === 'player1' ? 'player1' : 'player2',
+        activePrompt: effectiveText,
+        passiveLaw: 'No Backsies Shelter Rule',
+        intendedGoal: 'Build sturdy colonist housing huts',
+        missingEngineeringLink: specifiedTruss
+          ? 'Complete load-bearing frame specified'
+          : 'Only listed raw ingredients ("mud, wood, leaves") without a load-bearing A-frame truss or dried brick bond!',
+        literalOutcome: meltsInRain
+          ? 'The aliens stacked wet mud on loose leaves and sticks—and the rain melted the entire hut onto their heads!'
+          : 'The aliens piled mud, wood, and leaves into wobbly mounds (vulnerable to the first rainstorm!).',
+        alphaCentauriQuote:
+          '"Naming the ingredients of a house is not architecture." — Morgan Construction Manual',
+        entropyOverOptimizationWarning:
+          'Entropy AI packs colonists into mud heaps until a single storm buries the district.',
+        noBacksiesLocked: true,
+        status: meltsInRain ? 'sabotaged' : 'loophole_quirk',
+        efficiency: meltsInRain ? 20 : 65,
+        synergyNotes: [
+          meltsInRain
+            ? 'Rain + Unframed Mud-Leaf Hut = Soggy Mud Soup Collapse!'
+            : 'Open Loophole: If Player 2 prompts Rain, these unframed mud-leaf huts will melt!',
+        ],
+        voxelEffect: 'mud_leaf_hut',
+        turnCreated: next.globalTurn,
+      });
+
+      openLoopholeHint =
+        'Player 1 only said "mud, wood, leaves" without a frame! Player 2 can prompt Rain to melt their huts!';
+
+      synergies.push({
+        source: 'Literal AI ("Mud, Wood, Leaves")',
+        target: 'Colony Housing',
+        outcome: meltsInRain
+          ? 'Rain dissolved the unframed mud-and-leaf heaps into mud soup!'
+          : 'Aliens piled raw mud, sticks, and leaves without a roof frame!',
+        impactType: 'loophole_twist',
+      });
+    }
+
+    // 4. BURNING OIL & COAL -> GLOBAL WARMING, MELTING ICE VOXELS & RISING SEA LEVELS DROWNING COLONISTS!
+    if (hasOilBurn) {
+      next.phase3.climate.fossilFuelBurned = Math.min(100, next.phase3.climate.fossilFuelBurned + 55);
+      next.phase2.atmosphericPhysics = solveJuliaAtmosphericPhysics(
+        next.phase1,
+        next.phase2,
+        next.candidateWorlds,
+        next.phase3.climate.fossilFuelBurned
       );
+      next.phase3.climate.globalWarmingDeltaC = +(
+        next.phase3.climate.globalWarmingDeltaC + 6.4
+      ).toFixed(1);
+      next.phase3.climate.polarIceRemaining = Math.max(
+        0,
+        next.phase3.climate.polarIceRemaining - 65
+      );
+      next.phase3.climate.seaLevelY = +(
+        Math.min(4.2, next.phase3.climate.seaLevelY + 1.8)
+      ).toFixed(1);
+
+      // Mark low-ground coastal agents as drowning!
+      let drowned = 0;
+      next.phase3.agents.forEach((ag) => {
+        if (ag.role !== 'sky_whale' && ag.x <= 6 && ag.y <= 5) {
+          ag.state = 'drowning';
+          ag.statusEffect = `DROWNING in +${next.phase3.climate.seaLevelY}m Rising Sea!`;
+          drowned++;
+        }
+      });
+      next.phase3.climate.drownedUnitsCount += drowned;
+      next.phase3.divergenceScores.alphaCentauriXenobio += 35;
+
+      next.phase3.implementedFeatures.unshift({
+        id: `feat-oil-${next.globalTurn}`,
+        name: 'Fossil-Fuel Boreholes & Runaway Ice-Melt Deluge',
+        category: 'weather_ecology',
+        createdBy: actingMode === 'player1' ? 'player1' : 'player2',
+        activePrompt: effectiveText,
+        passiveLaw: `Optical depth τ surged to ${next.phase2.atmosphericPhysics.opticalDepthTau} (+${next.phase3.climate.globalWarmingDeltaC}°C)`,
+        intendedGoal: 'Rapid industrial energy from buried Carboniferous oil/coal',
+        missingEngineeringLink: 'No carbon capture or sea-wall dikes constructed!',
+        literalOutcome: `Polar ice blocks melted (${next.phase3.climate.polarIceRemaining}% left)! Sea levels rose to Level ${next.phase3.climate.seaLevelY}, flooding low-ground coastal blocks and drowning ${drowned} units!`,
+        alphaCentauriQuote:
+          '"Planetary sea levels are rising. Coastal installations will be inundated unless pressure domes are erected immediately." — Sid Meier’s Alpha Centauri Alert',
+        entropyOverOptimizationWarning:
+          'Entropy AI maximizes oil combustion until 100% of the ice caps melt into a global waterworld!',
+        noBacksiesLocked: true,
+        status: 'over_optimized',
+        efficiency: 140,
+        synergyNotes: [
+          `Ice blocks melted! Sea level rose to Y=${next.phase3.climate.seaLevelY}, submerging low-ground blocks!`,
+        ],
+        voxelEffect: 'oil_derrick_warming',
+        turnCreated: next.globalTurn,
+      });
+
       synergies.push({
-        source: `Set-in-Stone High Density (${next.phase2.densityG.toFixed(2)}G)`,
-        target: 'Ballistics & Surface Stamina',
-        outcome: `Locked High-G planet drags projectiles downward (+25% miss rate) and slows heavy surface marches!`,
-        impactType: 'planetary_constraint',
+        source: 'Burning Buried Oil & Coal Seams',
+        target: 'JuliaPhysics Optical Depth τ & Polar Ice Voxels',
+        outcome: `Global warming (+${next.phase3.climate.globalWarmingDeltaC}°C) melted the ice blocks and raised sea levels, drowning coastal colonists!`,
+        impactType: 'climate_collapse',
       });
     }
 
-    if (next.phase2.emergentArchetype === 'venusian_greenhouse') {
+    // 5. WOOD FARMING + ENTROPY EASTER-ISLAND OVER-OPTIMIZATION ("Farm All the Wood and Die Out!")
+    if (hasWoodFarm) {
+      next.phase3.resources.timber += 110;
+      next.phase3.resources.treesRemainingOnIsland = Math.max(
+        5,
+        next.phase3.resources.treesRemainingOnIsland - 45
+      );
+      next.phase3.divergenceScores.aoeEmpireWar += 20;
+      next.phase3.divergenceScores.rimWorldColony += 15;
+
+      next.phase3.implementedFeatures.unshift({
+        id: `feat-wood-${next.globalTurn}`,
+        name: 'Automated Timber Sawmills (Entropy Over-Optimized!)',
+        category: 'agriculture',
+        createdBy: actingMode === 'player1' ? 'player1' : 'player2',
+        activePrompt: effectiveText,
+        passiveLaw: 'Entropy AI maximizes tree-felling to 100% greedy efficiency',
+        intendedGoal: 'Harvest wood for colony construction',
+        missingEngineeringLink: 'Forgot to mandate replanting quotas or sacred protected groves!',
+        literalOutcome: `The Entropy Optimizer AI drove the colonists to chop down ${100 - next.phase3.resources.treesRemainingOnIsland}% of all trees! Only ${next.phase3.resources.treesRemainingOnIsland}% forest remains before Easter-Island ecological collapse!`,
+        alphaCentauriQuote:
+          '"What was the Easter Islander thinking as he chopped down the very last palm tree?" — Planetary Ecology Datalink',
+        entropyOverOptimizationWarning:
+          `CRITICAL: Entropy AI is making them farm ALL the wood (${next.phase3.resources.treesRemainingOnIsland}% trees left)! Prompt reforestation or rain before they die out!`,
+        noBacksiesLocked: true,
+        status: 'over_optimized',
+        efficiency: 185,
+        synergyNotes: [
+          `Entropy Optimizer Alert: Forest down to ${next.phase3.resources.treesRemainingOnIsland}%! Prompt counter-mechanics (No Backsies!)`,
+        ],
+        voxelEffect: 'wood_farm',
+        turnCreated: next.globalTurn,
+      });
+
       synergies.push({
-        source: 'Set-in-Stone Venusian Acid Atmosphere',
-        target: 'Exposed Surface Units',
-        outcome: 'Unshielded surface structures & troops suffer sulfuric corrosion unless sheltered in underground tunnels!',
-        impactType: 'planetary_constraint',
+        source: 'Entropy Optimizer AI × Wood Farming',
+        target: 'Island Forest Canopy',
+        outcome: `Entropy optimized lumberjacks to fell ${100 - next.phase3.resources.treesRemainingOnIsland}% of the forest—prompt a counter-rule before they farm all the wood and die out!`,
+        impactType: 'entropy_dampen',
       });
     }
 
-    // 1. Classic Orcs + Wind vs. Archers + Rain -> Mud & Arrow Deflection
+    // 6. STARCRAFT / AOE SIEGE: 100 ORCS + WIND VS. ARCHERS + RAIN -> MUD
     if (hasOrcs || hasArchers) {
-      next.phase3.divergenceScores.aoeEmpireWar += 30;
-      next.phase3.eraTitle = 'Age of Empires: The Siege of the Ant-Farm Gates';
+      next.phase3.divergenceScores.aoeEmpireWar += 32;
+      next.phase3.divergenceScores.blackAndWhiteMiracles += 18;
+      if (hasWind) {
+        next.phase3.weather.windSpeed = 82;
+        next.phase3.weather.arrowScatterPenalty = 64;
+      }
+      if (hasRain) {
+        next.phase3.weather.precipitation = 'rain';
+        next.phase3.weather.mudCoverage = 78;
+        next.phase3.weather.orcSpeedPenalty = 48;
+      }
 
       if (hasOrcs) {
-        next.phase3.implementedFeatures.unshift({
-          id: `feat-orcs-${next.globalTurn}`,
-          name: '100 Orc Vanguard at the Gates',
-          category: 'military_siege',
-          createdBy: 'player1',
-          activePrompt: p1Active,
-          passiveLaw: p1Passive,
-          status: hasRain ? 'stressed' : 'thriving',
-          efficiency: hasRain ? 55 : 115,
-          synergyNotes: hasRain
-            ? ['Rain turned the gate approach into deep Mud -> Orc charge speed reduced by 45%!']
-            : ['Charging full speed toward the colony gates!'],
-          voxelEffect: 'orc_siege',
-          turnCreated: next.globalTurn,
-        });
-
-        for (let i = 0; i < 6; i++) {
+        for (let i = 0; i < 4; i++) {
           next.phase3.agents.push({
             id: `orc-${next.globalTurn}-${i}`,
             faction: 'player1',
             role: 'orc_raider',
             label: `Orc Vanguard #${i + 1}`,
-            x: 3 + (i % 3) * 2,
+            x: 4 + i,
             y: 5,
-            z: 8 + Math.floor(i / 3) * 3,
-            vx: hasRain ? 0.18 : 0.42,
+            z: 8 + i * 2,
+            vx: hasRain ? 0.15 : 0.45,
             vz: 0.1,
-            hp: 110,
-            maxHp: 110,
-            speed: hasRain ? 0.55 : 1.1,
+            hp: 115,
+            maxHp: 115,
+            speed: hasRain ? 0.5 : 1.15,
             accuracy: 0.75,
             state: 'attacking',
-            statusEffect: hasRain ? 'Bogged in Mud (-45% Speed)' : 'Charging Gates',
+            statusEffect: hasRain ? 'Bogged in Mud (-48% Speed)' : 'Charging Ramparts',
           });
         }
       }
 
       if (hasArchers) {
-        next.phase3.implementedFeatures.unshift({
-          id: `feat-archers-${next.globalTurn}`,
-          name: 'Rampart Elven Archer Garrison',
-          category: 'military_siege',
-          createdBy: 'player2',
-          activePrompt: p2Active,
-          passiveLaw: p2Passive,
-          status: hasWind ? 'stressed' : 'thriving',
-          efficiency: hasWind ? 42 : 120,
-          synergyNotes: hasWind
-            ? ['Gale-force Crosswind deflects arrows -> Legolas-style volleys scatter with -62% hit rate!']
-            : ['Raining precision volleys from the citadel walls!'],
-          voxelEffect: 'archer_garrison',
-          turnCreated: next.globalTurn,
-        });
-
-        for (let i = 0; i < 4; i++) {
+        for (let i = 0; i < 3; i++) {
           next.phase3.agents.push({
             id: `archer-${next.globalTurn}-${i}`,
             faction: 'player2',
             role: 'elven_archer',
-            label: `Rampart Archer #${i + 1}`,
-            x: 16,
+            label: `High-Ground Archer #${i + 1}`,
+            x: 15,
             y: 7,
-            z: 7 + i * 2,
+            z: 8 + i * 2,
             vx: 0,
             vz: 0,
-            hp: 85,
-            maxHp: 85,
+            hp: 90,
+            maxHp: 90,
             speed: 0.9,
-            accuracy: hasWind ? 0.32 : 0.88,
+            accuracy: next.phase2.ocular.kokosjaSlepotaActive
+              ? 0.2
+              : hasWind
+                ? 0.34
+                : 0.88,
             state: 'attacking',
-            statusEffect: hasWind ? 'Wind Scatter (-62% Hit)' : 'Volley Fire',
+            statusEffect: next.phase2.ocular.kokosjaSlepotaActive
+              ? 'Kokošja Slepota Night-Blind (-75% Hit!)'
+              : hasWind
+                ? 'Crosswind Scatter (-64% Hit!)'
+                : 'High-Ground Volley',
           });
         }
       }
 
-      if (hasRain && hasOrcs) {
-        synergies.push({
-          source: 'Player 2 Passive (Rain) + Soil Strata',
-          target: 'Player 1 Active (100 Orcs at Gates)',
-          outcome: 'Rain -> Deep Mud -> Charging Orcs bogged down (-45% movement speed) in front of the gates!',
-          impactType: 'sabotage',
-        });
-      }
-      if (hasWind && hasArchers) {
-        synergies.push({
-          source: 'Player 1 Passive (Crosswind)',
-          target: 'Player 2 Active (Rampart Archers)',
-          outcome: 'Wind -> Arrow Deflection -> Archers fail to pick off the vanguard (-62% accuracy)!',
-          impactType: 'sabotage',
-        });
-      }
-    }
-
-    // 2. Wood Farming vs. Rain (Co-op) or Drought (Sabotage)
-    if (hasWoodFarm) {
-      next.phase3.divergenceScores.aoeEmpireWar += 15;
-      next.phase3.divergenceScores.ecologicalChaos += 15;
-
-      const isSabotagedByDrought = hasDrought;
-      const isBoostedByRain = hasRain && !hasDrought;
-
       next.phase3.implementedFeatures.unshift({
-        id: `feat-wood-${next.globalTurn}`,
-        name: 'Alien Timber Plantation & Sawmills',
-        category: 'agriculture',
-        createdBy: 'player1',
-        activePrompt: p1Active,
-        passiveLaw: p1Passive,
-        status: isSabotagedByDrought ? 'sabotaged' : 'thriving',
-        efficiency: isSabotagedByDrought ? 30 : isBoostedByRain ? 175 : 110,
-        synergyNotes: isSabotagedByDrought
-          ? ['Sabotaged by rival Drought! Sap dries up and timber yield drops by 70%!']
-          : isBoostedByRain
-            ? ['Nourished by Monsoon Rain & Aqueducts! Timber output surges to 175%!']
-            : ['Autonomous lumberjacks harvesting planetary timber groves.'],
-        voxelEffect: isSabotagedByDrought ? 'drought_heat' : 'wood_farm',
-        turnCreated: next.globalTurn,
-      });
-
-      next.phase3.resources.timber += isSabotagedByDrought ? 15 : isBoostedByRain ? 140 : 65;
-
-      for (let i = 0; i < 3; i++) {
-        next.phase3.agents.push({
-          id: `lumber-${next.globalTurn}-${i}`,
-          faction: 'player1',
-          role: 'lumberjack',
-          label: `Timber Harvester #${i + 1}`,
-          x: 7 + i * 3,
-          y: 5,
-          z: 15,
-          vx: 0.25,
-          vz: -0.2,
-          hp: 90,
-          maxHp: 90,
-          speed: 1.0,
-          accuracy: 0.8,
-          state: 'working',
-          statusEffect: isSabotagedByDrought ? 'Parched by Drought' : 'Harvesting Timber',
-        });
-      }
-
-      if (isSabotagedByDrought) {
-        synergies.push({
-          source: 'Player 2 (Severe Drought)',
-          target: 'Player 1 (Wood Farming)',
-          outcome: 'Drought withers the newly planted timber groves into dry brush (-70% wood yield)!',
-          impactType: 'sabotage',
-        });
-      } else if (isBoostedByRain) {
-        synergies.push({
-          source: 'Player 2 (Rain & Irrigation)',
-          target: 'Player 1 (Wood Farming)',
-          outcome: 'Co-Op Synergy! Rain supercharges the alien forestry groves (+140 Timber, thriving canopy)!',
-          impactType: 'synergy',
-        });
-      }
-    }
-
-    // 3. SimCity Traffic & Road Network vs. Mudslide / Gridlock
-    if (hasTrafficSimCity) {
-      next.phase3.divergenceScores.simCityCivic += 35;
-      next.phase3.eraTitle = 'SimCity Divergence: Alien Transit Metropolis';
-
-      const jammed = hasMudslideSabotage;
-      next.phase3.resources.trafficFlow = jammed
-        ? Math.max(18, next.phase3.resources.trafficFlow - 38)
-        : Math.min(98, next.phase3.resources.trafficFlow + 25);
-      next.phase3.resources.colonyPopulation += jammed ? 8 : 28;
-
-      next.phase3.implementedFeatures.unshift({
-        id: `feat-traffic-${next.globalTurn}`,
-        name: 'SimCity Elevated Transit & Commuter Grid',
-        category: 'traffic_civic',
-        createdBy: 'player1',
-        activePrompt: p1Active,
-        passiveLaw: p1Passive,
-        status: jammed ? 'sabotaged' : 'thriving',
-        efficiency: jammed ? 40 : 155,
-        synergyNotes: jammed
-          ? ['Rival Mudslide & Toll Blockade triggered a multi-lane alien rush-hour traffic jam!']
-          : ['Synchronized commuter pods and cargo haulers accelerating colony growth!'],
-        voxelEffect: 'transit_road',
-        turnCreated: next.globalTurn,
-      });
-
-      for (let i = 0; i < 4; i++) {
-        next.phase3.agents.push({
-          id: `cart-${next.globalTurn}-${i}`,
-          faction: 'colony',
-          role: 'commuter_cart',
-          label: `Transit Pod #${i + 1}`,
-          x: 4 + i * 4,
-          y: 5,
-          z: 12,
-          vx: jammed ? 0.08 : 0.65,
-          vz: 0,
-          hp: 100,
-          maxHp: 100,
-          speed: jammed ? 0.25 : 1.5,
-          accuracy: 1,
-          state: 'commuting',
-          statusEffect: jammed ? 'Stuck in Traffic Jam!' : 'Express Lane Flow',
-        });
-      }
-
-      if (jammed) {
-        synergies.push({
-          source: 'Player 2 (Mudslide & Toll Blockade)',
-          target: 'Player 1 (SimCity Transit Network)',
-          outcome: 'Rush-hour gridlock! Commuter pods pile up at the mud-choked interchange (-38% Traffic Flow).',
-          impactType: 'sabotage',
-        });
-      } else {
-        synergies.push({
-          source: 'SimCity Transit Grid',
-          target: 'Alien Ant-Farm Economy',
-          outcome: 'High-speed road network links surface timber mills with underground shafts (+28 Population)!',
-          impactType: 'synergy',
-        });
-      }
-    }
-
-    // 4. Generic Open-Ended Feature Fallback (if players typed a completely custom creative prompt!)
-    if (!hasOrcs && !hasArchers && !hasWoodFarm && !hasTrafficSimCity) {
-      next.phase3.divergenceScores.dwarfSubterranean += hasTunnel ? 25 : 10;
-      next.phase3.implementedFeatures.unshift({
-        id: `feat-custom-p1-${next.globalTurn}`,
-        name: p1Active.slice(0, 42) || 'Divine Manifestation I',
-        category: hasTunnel ? 'subterranean' : 'weather_ecology',
-        createdBy: 'player1',
-        activePrompt: p1Active,
-        passiveLaw: p1Passive,
-        status: 'thriving',
-        efficiency: 115,
-        synergyNotes: [`Interacting with ${p2Active.slice(0, 32)} under ${next.phase2.emergentArchetype.replace(/_/g, ' ')} laws.`],
-        voxelEffect: hasTunnel ? 'underground_warren' : 'fungal_reactor',
-        turnCreated: next.globalTurn,
-      });
-
-      next.phase3.implementedFeatures.unshift({
-        id: `feat-custom-p2-${next.globalTurn}`,
-        name: p2Active.slice(0, 42) || 'Divine Manifestation II',
-        category: 'weather_ecology',
-        createdBy: 'player2',
-        activePrompt: p2Active,
-        passiveLaw: p2Passive,
-        status: 'thriving',
-        efficiency: 110,
-        synergyNotes: [`Passive condition (${p2Passive.slice(0, 32)}) reshapes local colony behavior.`],
-        voxelEffect: 'aqueduct',
+        id: `feat-siege-${next.globalTurn}`,
+        name: 'High-Ground Rampart Siege (Orcs vs. Archers)',
+        category: 'military_siege',
+        createdBy: actingMode === 'player2' ? 'player2' : 'player1',
+        activePrompt: effectiveText,
+        passiveLaw: 'Rain -> Mud slows Orcs (-48%); Wind -> Scatters Arrows (-64%)',
+        intendedGoal: 'Breach or defend the colony citadel gates',
+        missingEngineeringLink: hasRain
+          ? 'Orcs lacked mud-tread cleats; Archers lacked wind-stabilized fletching!'
+          : 'Direct tactical engagement',
+        literalOutcome:
+          'Rain turned the low-ground dirt blocks into sticky mud slowing the Orc charge, while gale crosswinds scattered the archers’ arrows!',
+        alphaCentauriQuote:
+          '"Superior firepower means nothing when your boots are anchored in two feet of primordial mud." — Colonel Corazon Santiago',
+        entropyOverOptimizationWarning:
+          'Entropy AI rusts armor and exhausts stamina until both armies collapse in the mud.',
+        noBacksiesLocked: true,
+        status: 'stressed',
+        efficiency: 85,
+        synergyNotes: [
+          'Rain + Dirt Voxels = Deep Mud (-48% Orc Speed)',
+          'Wind + Aerodynamic Drag = Arrow Scatter (-64% Accuracy)',
+        ],
+        voxelEffect: 'orc_siege',
         turnCreated: next.globalTurn,
       });
 
       synergies.push({
-        source: `P1 (${p1Active.slice(0, 25)})`,
-        target: `P2 (${p2Active.slice(0, 25)})`,
-        outcome: `New custom features integrated into the ${next.mainAlien.name} colony simulation!`,
-        impactType: 'synergy',
+        source: 'Rain -> Mud × Crosswind -> Arrows',
+        target: '100 Orcs & Rampart Archers',
+        outcome: 'Mud slows charging Orcs by 48%, while Crosswind causes Archers to miss by 64%!',
+        impactType: 'sabotage',
       });
     }
 
-    // Merge AI-generated features or synergies if returned by Gemini
-    if (aiData && typeof aiData === 'object') {
-      const p3Ai = (aiData as { phase3Updates?: Record<string, unknown> }).phase3Updates;
-      if (p3Ai && Array.isArray(p3Ai.newFeatures)) {
-        for (const af of p3Ai.newFeatures.slice(0, 2)) {
-          const item = af as Record<string, unknown>;
-          if (item.name && typeof item.name === 'string') {
-            const alreadyExists = next.phase3.implementedFeatures.some(
-              (f) => f.name.toLowerCase() === String(item.name).toLowerCase()
-            );
-            if (!alreadyExists) {
-              next.phase3.implementedFeatures.unshift({
-                id: `feat-ai-${next.globalTurn}-${Math.random().toString(36).slice(2, 6)}`,
-                name: String(item.name),
-                category: (item.category as ImplementedColonyFeature['category']) || 'weather_ecology',
-                createdBy: (item.createdBy as ImplementedColonyFeature['createdBy']) || 'player1',
-                activePrompt: String(item.activePrompt || p1Active),
-                passiveLaw: String(item.passiveLaw || p1Passive),
-                status: (item.status as ImplementedColonyFeature['status']) || 'thriving',
-                efficiency: Number(item.efficiency) || 100,
-                synergyNotes: Array.isArray(item.synergyNotes)
-                  ? item.synergyNotes.map(String)
-                  : ['Synthesized by Gemini Causal Weaver'],
-                voxelEffect:
-                  (item.voxelEffect as ImplementedColonyFeature['voxelEffect']) ||
-                  'fungal_reactor',
-                turnCreated: next.globalTurn,
-              });
-            }
-          }
-        }
-      }
+    // 7. CLOUDS & SEASONS OR GENERIC CUSTOM FEATURE
+    if (
+      hasCloudsSeasons ||
+      (!hasWheel && !hasSteamBoiler && !hasHut && !hasOilBurn && !hasWoodFarm && !hasOrcs && !hasArchers)
+    ) {
+      const seasonsCycle: Array<'spring' | 'summer' | 'autumn' | 'winter'> = [
+        'spring',
+        'summer',
+        'autumn',
+        'winter',
+      ];
+      next.phase3.season =
+        seasonsCycle[(seasonsCycle.indexOf(next.phase3.season) + 1) % 4];
+      next.phase3.cloudCover = Math.min(100, next.phase3.cloudCover + 25);
+      next.phase3.divergenceScores.blackAndWhiteMiracles += 22;
+
+      next.phase3.implementedFeatures.unshift({
+        id: `feat-custom-${next.globalTurn}`,
+        name: effectiveText.slice(0, 44) || 'Seasonal Cloud & Colony Cycle',
+        category: 'weather_ecology',
+        createdBy: actingMode === 'player2' ? 'player2' : 'player1',
+        activePrompt: effectiveText,
+        passiveLaw: `Season shifted to ${next.phase3.season.toUpperCase()} · Cloud Cover ${next.phase3.cloudCover}%`,
+        intendedGoal: 'Modulate planetary climate and colony behavior',
+        missingEngineeringLink: 'Subject to Entropy Optimizer drift',
+        literalOutcome: `The alien ant-farm enters ${next.phase3.season.toUpperCase()} under ${next.phase3.cloudCover}% cloud cover, shifting resource rhythms across the voxel blocks.`,
+        alphaCentauriQuote:
+          '"To give a world seasons is to give its creatures memory and anticipation." — Lady Deirdre Skye',
+        entropyOverOptimizationWarning:
+          'Entropy AI attempts to lock the axial tilt into perpetual winter stasis.',
+        noBacksiesLocked: true,
+        status: 'thriving',
+        efficiency: 115,
+        synergyNotes: [`Permanent No-Backsies Rule added in Turn ${next.globalTurn}`],
+        voxelEffect: 'clouds_and_seasons',
+        turnCreated: next.globalTurn,
+      });
     }
 
-    // Entropy 3rd Faction Move in Phase 3
+    // Update Power Tower a^(b^c) complexity readout
+    const a = Math.max(2, Math.round(next.phase1.su3StrongCoupling * 2));
+    const b = Math.max(2, Math.min(4, next.phase2.turnCount + 2));
+    const c = Math.max(1, Math.min(3, Math.ceil(next.phase3.implementedFeatures.length / 2)));
+    next.phase3.mathRules.powerTowerA = a;
+    next.phase3.mathRules.powerTowerB = b;
+    next.phase3.mathRules.powerTowerC = c;
+    const towerVal = Math.pow(a, Math.pow(b, c));
+    next.phase3.mathRules.powerTowerDisplay = `${a}^(${b}^${c}) = ${towerVal.toLocaleString()} States`;
+
     entropyCounterLaw =
       (aiData?.entropyCounterLaw as string) ||
-      'Entropy (The Great Silence) imposes Calcified Equilibrium — rusting gears, dulling arrowheads, and urging colonists to sleep.';
-    synergies.push({
-      source: '3rd Faction: Entropy AI',
-      target: 'All Active Features & Units',
-      outcome: entropyCounterLaw,
-      impactType: 'entropy_dampen',
-    });
-
+      `Entropy Optimizer AI accelerates resource depletion (${next.phase3.resources.treesRemainingOnIsland}% trees left, ${next.phase3.climate.polarIceRemaining}% polar ice left) to bring the island to quiet extinction.`;
     headline =
       (aiData?.headline as string) ||
-      `Turn ${next.globalTurn}: ${p1Active.slice(0, 24)} × ${p2Active.slice(0, 24)}`;
+      `Move ${next.globalTurn} (${actingMode.toUpperCase()}): ${effectiveText.slice(0, 38)}...`;
     narrative =
       (aiData?.narrative as string) ||
-      `On the locked ${next.phase2.emergentArchetype.replace(/_/g, ' ')} world (${next.phase2.densityG.toFixed(2)}G), Player 1 declared "${p1Active}" (${p1Passive}) while Player 2 countered with "${p2Active}" (${p2Passive}). Meanwhile, Entropy attempts to quiet the chaos.`;
-    next.entropyIndex = Math.max(12, Math.min(98, next.entropyIndex + 6));
+      `Move locked in (No Backsies!). ${synergies[0]?.outcome || 'The alien ant-farm adapts to the new rule.'} Meanwhile, ${entropyCounterLaw}`;
+    next.entropyIndex = Math.max(12, Math.min(99, next.entropyIndex + 6));
   }
 
-  // Merge AI synergies if present
-  if (aiData && Array.isArray((aiData as { synergies?: unknown[] }).synergies)) {
-    const aiSyns = (aiData as { synergies: CausalSynergyItem[] }).synergies;
-    for (const s of aiSyns.slice(0, 3)) {
-      if (s && s.source && s.outcome) {
-        synergies.push({
-          source: String(s.source),
-          target: String(s.target || 'Colony World'),
-          outcome: String(s.outcome),
-          impactType:
-            (s.impactType as CausalSynergyItem['impactType']) || 'synergy',
-        });
-      }
-    }
-  }
-
+  next.lastPlayerMove = {
+    player: actingMode === 'player2' ? 'player2' : 'player1',
+    active: actingMode === 'player2' ? p2Active : p1Active,
+    passive: actingMode === 'player2' ? p2Passive : p1Passive,
+    openLoopholeHint: (aiData?.openLoopholeHint as string) || openLoopholeHint,
+  };
   next.lastEntropyCounterLaw = entropyCounterLaw;
 
   const entry: TurnChronicleEntry = {
     id: `chron-${next.globalTurn}`,
     turnNumber: next.globalTurn,
     phase: next.phase,
+    actingPlayer: actingMode,
     p1Active,
     p1Passive,
     p2Active,
@@ -1174,9 +1400,10 @@ export function applyDeterministicAndAiWeave(
     headline,
     narrative,
     synergies,
-    timestamp: `Turn ${next.globalTurn}`,
+    divergenceSnapshot: { ...next.phase3.divergenceScores },
+    timestamp: `Move ${next.globalTurn}`,
   };
 
-  next.chronicles = [entry, ...next.chronicles].slice(0, 25);
+  next.chronicles = [entry, ...next.chronicles].slice(0, 30);
   return next;
 }

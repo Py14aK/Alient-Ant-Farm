@@ -31,41 +31,36 @@ async function startServer() {
   const app = express();
   app.use(express.json({ limit: '2mb' }));
 
+  // 1. Move-Based & Dual-Move Causal Weaver Route
   app.post('/api/cosmos/weave-turn', async (req, res) => {
     try {
-      const { phase, p1Active, p1Passive, p2Active, p2Passive, currentState } = req.body;
+      const { phase, actingPlayer, p1Active, p1Passive, p2Active, p2Passive, currentState } = req.body;
       const ai = getAiClient();
 
       if (!ai) {
         return res.status(503).json({
           error: 'GEMINI_API_KEY_NOT_CONFIGURED',
-          message: 'Using deterministic causal physics compiler.',
+          message: 'Using deterministic JuliaPhysics + Anthropological Loophole compiler.',
         });
       }
 
-      const systemInstruction = `You are the Causal Weaver and the 3rd Faction AI ("Entropy / The Great Silence") for a two-player emergent strategy god-game ("Aethelgard: The Ant-Farm Cosmos").
-Each turn:
-- Player 1 declares an ACTIVE manifestation and a PASSIVE law/condition.
-- Player 2 declares an ACTIVE manifestation and a PASSIVE law/condition.
-- You also act as the 3rd Faction (ENTROPY), introducing a counter-law that seeks thermodynamic stillness, cooling, petrification, gridlock, or equilibrium so nothing happens anymore.
+      const systemInstruction = `You are the Literal-Minded Causal Physics & Anthropological Interpreter AND the 3rd Faction ("Entropy — The Ruthless Optimizer") for "FIRST WE MUST PROMPT THE UNIVERSE (Satisfractured · The Alien Ant Farm)".
+Key Laws of the Game:
+1. NO BACKSIES: Every rule or feature prompted is permanently locked in.
+2. LITERAL AI LOOPHOLES ("We are less educated than we think"):
+   - If a player invents "The Hut" with just "mud, wood, leaves" without describing a triangulated load-bearing roof truss or foundation, it slumps into wet mud soup in the rain!
+   - If a player invents "The Wheel" without explicitly specifying "ROUND circular disc + fixed axle + greased bearing for hauling carts", the other player can make it SQUARE ("You didn't say round wheel!"), OR the aliens use it as spinning prayer ornaments!
+   - If a player invents a "Steam Boiler / Turbine" without specifying pistons, cranks, and locomotive drivetrains, the aliens use it to spin vertical DÖNER KEBAB spits and temple automatons (like Hero of Alexandria & Taqi al-Din in real history)!
+3. ENTROPY IS THE RUTHLESS OPTIMIZER:
+   - Players create chaos; Entropy optimizes any unchecked mechanic toward extinction so nothing happens anymore! For example, if players prompt "Farm wood", Entropy optimizes wood harvesting until the aliens chop down EVERY LAST TREE on the island (Easter Island / Rapa Nui collapse) and die out unless players prompt a counter-mechanic!
+4. OCULAR EVOLUTION:
+   - 3 Color Cone distributions (with Red in the middle next to Green as an evolutionary cheat) + Brightness/Contour Rods. Missing a cone causes Color Blindness; forgetting Rods causes Kokošja Slepota (Night Blindness — cannot see stars in the dark or adapt to shadows!).
+5. GLOBAL WARMING & SEA-LEVEL RISE:
+   - Burning underground oil/coal spikes optical depth tau via JuliaPhysics radiative transfer, melting polar ice blocks and raising sea levels to drown coastal colonies!`;
 
-Follow the rules of the current Phase:
-- PHASE 1 (Cooperative Big Bang, Time Symmetry, Gravity, Electricity & Molecular Clouds):
-  The two players work constructively together to define the arrow of time ('forward' | 'reversible_echo' | 'dilated'), Gravity vs. Electricity balance, and Molecular Cloud nucleosynthesis to ignite the Sun and synthesize elements (hydrogen, carbon, oxygen, sulfur, iron, silicates).
-- PHASE 2 (3D Solar System Simulator & Molecular/Planetary Emergence):
-  On their chosen world (${currentState?.phase2?.selectedWorldType || 'rocky'}), players create planetary attributes: Density/Mass, Acidity, H2O, Alcohol, Carbon bonding rules, RNA, DNA, and Bacteria/Mushrooms.
-  CRITICAL EMERGENCE RULES:
-  1. If CO2/Sulfur or Acidity is high and NEITHER player has created carbon/sulfur-consuming bacteria, the planet shifts toward 'venusian_greenhouse' ("Oops, we forgot to create bacteria -> Venus world!").
-  2. If Gravity/Mass is pushed very high (densityG > 1.75), it becomes 'super_dense_crusher' ("Oh, we are too dense!").
-  3. If woody carbon ('woody_lignin') exists without wood-eating bacteria or mushrooms ('woodDecomposerFungi' === false), dead wood builds up and triggers 'great_fire_inferno' ("The Great Fire")!
-  4. If H2O + sugars/carbon ferment without oxygen balance, it creates 'alcohol_ferment_sea'.
-- PHASE 3 (The Ant-Farm Colony & Divergent Prompt Strategy Sandbox):
-  The Universe and Planet Constitution are now SET IN STONE (${JSON.stringify(currentState?.phase2 || {})}).
-  Players influence their autonomous alien ant-farm colony by prompting ANY new feature—from farming wood, rain, or drought, to SimCity traffic & road networks, to Age of Empires resource gathering, castles, and RTS sieges (e.g., 100 Orcs at the gates + Wind vs. Elven Archers + Rain -> Rain creates Mud slowing Orcs; Wind scatters Archer arrows).
-  Compile their prompts into concrete newFeatures, weatherUpdate, spawnAgents, and causal synergies constrained by the locked planet!`;
-
-      const promptText = JSON.stringify({
+      const promptPayload = JSON.stringify({
         phase,
+        actingPlayer,
         player1: { active: p1Active, passive: p1Passive },
         player2: { active: p2Active, passive: p2Passive },
         currentState,
@@ -73,7 +68,7 @@ Follow the rules of the current Phase:
 
       const response = await ai.models.generateContent({
         model: 'gemini-3.8-flash',
-        contents: `Evaluate this turn and return the emergent simulation updates in JSON:\n${promptText}`,
+        contents: `Evaluate this move and return the emergent simulation updates in JSON:\n${promptPayload}`,
         config: {
           systemInstruction,
           thinkingConfig: { thinkingLevel: ThinkingLevel.LOW },
@@ -84,7 +79,7 @@ Follow the rules of the current Phase:
               headline: { type: Type.STRING },
               narrative: { type: Type.STRING },
               entropyCounterLaw: { type: Type.STRING },
-              entropyDelta: { type: Type.NUMBER },
+              openLoopholeHint: { type: Type.STRING },
               synergies: {
                 type: Type.ARRAY,
                 items: {
@@ -97,60 +92,10 @@ Follow the rules of the current Phase:
                   },
                 },
               },
-              phase1Updates: {
-                type: Type.OBJECT,
-                properties: {
-                  timeArrow: { type: Type.STRING },
-                  gravityStrengthDelta: { type: Type.NUMBER },
-                  electricityStrengthDelta: { type: Type.NUMBER },
-                  molecularCloudDelta: { type: Type.NUMBER },
-                  igniteSun: { type: Type.BOOLEAN },
-                  starSpectralClass: { type: Type.STRING },
-                  starColorHex: { type: Type.STRING },
-                },
-              },
-              phase2Updates: {
-                type: Type.OBJECT,
-                properties: {
-                  densityGDelta: { type: Type.NUMBER },
-                  h2oDelta: { type: Type.NUMBER },
-                  alcoholDelta: { type: Type.NUMBER },
-                  acidityDelta: { type: Type.NUMBER },
-                  co2SulfurDelta: { type: Type.NUMBER },
-                  oxygenDelta: { type: Type.NUMBER },
-                  carbonComplexity: { type: Type.STRING },
-                  rnaPresent: { type: Type.BOOLEAN },
-                  dnaPresent: { type: Type.BOOLEAN },
-                  carbonSulfurBacteria: { type: Type.BOOLEAN },
-                  retinalPurpleMicrobes: { type: Type.BOOLEAN },
-                  woodDecomposerFungi: { type: Type.BOOLEAN },
-                  deadWoodDelta: { type: Type.NUMBER },
-                  triggerGreatFire: { type: Type.BOOLEAN },
-                  emergentArchetype: { type: Type.STRING },
-                  diagnosticAlerts: {
-                    type: Type.ARRAY,
-                    items: { type: Type.STRING },
-                  },
-                },
-              },
               phase3Updates: {
                 type: Type.OBJECT,
                 properties: {
                   eraTitle: { type: Type.STRING },
-                  simCityCivicDelta: { type: Type.NUMBER },
-                  aoeEmpireWarDelta: { type: Type.NUMBER },
-                  dwarfSubterraneanDelta: { type: Type.NUMBER },
-                  ecologicalChaosDelta: { type: Type.NUMBER },
-                  timberDelta: { type: Type.NUMBER },
-                  stoneOreDelta: { type: Type.NUMBER },
-                  biomassDelta: { type: Type.NUMBER },
-                  trafficFlowDelta: { type: Type.NUMBER },
-                  populationDelta: { type: Type.NUMBER },
-                  windSpeed: { type: Type.NUMBER },
-                  precipitation: { type: Type.STRING },
-                  mudCoverage: { type: Type.NUMBER },
-                  arrowScatterPenalty: { type: Type.NUMBER },
-                  orcSpeedPenalty: { type: Type.NUMBER },
                   newFeatures: {
                     type: Type.ARRAY,
                     items: {
@@ -161,6 +106,11 @@ Follow the rules of the current Phase:
                         createdBy: { type: Type.STRING },
                         activePrompt: { type: Type.STRING },
                         passiveLaw: { type: Type.STRING },
+                        intendedGoal: { type: Type.STRING },
+                        missingEngineeringLink: { type: Type.STRING },
+                        literalOutcome: { type: Type.STRING },
+                        alphaCentauriQuote: { type: Type.STRING },
+                        entropyOverOptimizationWarning: { type: Type.STRING },
                         status: { type: Type.STRING },
                         efficiency: { type: Type.NUMBER },
                         synergyNotes: {
@@ -168,19 +118,6 @@ Follow the rules of the current Phase:
                           items: { type: Type.STRING },
                         },
                         voxelEffect: { type: Type.STRING },
-                      },
-                    },
-                  },
-                  spawnAgents: {
-                    type: Type.ARRAY,
-                    items: {
-                      type: Type.OBJECT,
-                      properties: {
-                        faction: { type: Type.STRING },
-                        role: { type: Type.STRING },
-                        label: { type: Type.STRING },
-                        count: { type: Type.NUMBER },
-                        statusEffect: { type: Type.STRING },
                       },
                     },
                   },
@@ -192,12 +129,77 @@ Follow the rules of the current Phase:
       });
 
       const rawText = (response.text ?? '{}').trim();
-      const parsed = JSON.parse(rawText);
-      return res.json(parsed);
+      return res.json(JSON.parse(rawText));
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : 'Unknown Gemini server error';
       console.error('Error in /api/cosmos/weave-turn:', message);
       return res.status(500).json({ error: 'WEAVE_FAILED', message });
+    }
+  });
+
+  // 2. Google Search Grounded + Wolfram / JuliaPhysics & Anthropological History Oracle Chat
+  app.post('/api/cosmos/oracle-chat', async (req, res) => {
+    try {
+      const { message, history, worldContext } = req.body;
+      const ai = getAiClient();
+
+      if (!ai) {
+        return res.status(503).json({
+          error: 'GEMINI_API_KEY_NOT_CONFIGURED',
+          message: 'Using built-in JuliaPhysics & Anthropological Datalinks.',
+        });
+      }
+
+      const systemInstruction = `You are the Galactic Guide, Wolfram/JuliaPhysics Computational Engine, and Anthropological Historian for "FIRST WE MUST PROMPT THE UNIVERSE (Satisfractured · The Alien Ant Farm)".
+Use Google Search grounding to cite real scientific, physical, chemical, biological, and historical facts:
+- Phase I: Standard Model SU(3)_C x SU(2)_L x U(1)_Y, Cosmic Inflation, CP violation / Time Asymmetry, Stellar Nucleosynthesis.
+- Phase II: Symplectic N-Body gravity, Goldilocks zone around a Yellow Sun (4th planet), hydrostatic atmospheric scale height, Clausius-Clapeyron boiling point, Carboniferous lignin before white-rot fungi (The Great Fire), Venusian runaway greenhouse, and Evolution of the Eye (3 color cone distributions with Red in the middle as a cheat, plus Rods for scotopic brightness & contours—where missing Rods causes Kokošja Slepota / night blindness).
+- Phase III: Anthropological history of inventions (e.g., Hero of Alexandria's aeolipile and Taqi al-Din's 1551 steam turbine used to spin Döner kebab spits and automatons rather than cars; Mesoamerican wheeled toys; Easter Island deforestation) and how to describe physical mechanisms from first principles without loopholes.
+Keep answers concise, witty (like The Hitchhiker's Guide to the Galaxy meets Sid Meier's Alpha Centauri), and include quantitative equations where helpful.`;
+
+      const contents = [
+        ...(Array.isArray(history)
+          ? history.slice(-6).map((m: { role: string; content: string }) => ({
+              role: m.role === 'assistant' ? 'model' : 'user',
+              parts: [{ text: m.content }],
+            }))
+          : []),
+        {
+          role: 'user',
+          parts: [
+            {
+              text: `[Current Planet & Physics Context: ${JSON.stringify(worldContext || {})}]\nUser Question: ${message}`,
+            },
+          ],
+        },
+      ];
+
+      const response = await ai.models.generateContent({
+        model: 'gemini-3.8-flash',
+        contents,
+        config: {
+          systemInstruction,
+          tools: [{ googleSearch: {} }],
+        },
+      });
+
+      const chunks = response.candidates?.[0]?.groundingMetadata?.groundingChunks || [];
+      const sources: Array<{ title: string; uri: string }> = [];
+      for (const ch of chunks) {
+        const web = (ch as { web?: { uri?: string; title?: string } }).web;
+        if (web?.uri && web?.title) {
+          sources.push({ title: web.title, uri: web.uri });
+        }
+      }
+
+      return res.json({
+        reply: response.text || 'Consulted the Galactic Datalinks.',
+        sources: sources.slice(0, 5),
+      });
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Oracle error';
+      console.error('Error in /api/cosmos/oracle-chat:', msg);
+      return res.status(500).json({ error: 'ORACLE_FAILED', message: msg });
     }
   });
 
@@ -216,7 +218,7 @@ Follow the rules of the current Phase:
   }
 
   app.listen(PORT, '0.0.0.0', () => {
-    console.log(`Aethelgard Cosmos server listening on http://localhost:${PORT}`);
+    console.log(`FIRST WE MUST PROMPT THE UNIVERSE server listening on http://localhost:${PORT}`);
   });
 }
 
