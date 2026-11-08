@@ -1,0 +1,6 @@
+{
+  "name": "Aethelgard: The Ant-Farm Cosmos",
+  "description": "A two-player + Entropy AI emergent strategy god-game across three evolutionary phases—from Big Bang physics and a 3D Solar System simulator to a divergent isometric 3D voxel ant-farm colony spanning SimCity infrastructure to Age of Empires sieges.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
