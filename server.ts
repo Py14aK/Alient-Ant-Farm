@@ -4,6 +4,13 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import { createServer as createViteServer } from 'vite';
 import { GoogleGenAI, Type, ThinkingLevel } from '@google/genai';
+import {
+  CREDITS_PER_WEAVE,
+  getPlayerId,
+  ledger,
+  registerCreditRoutes,
+  registerStripeWebhook,
+} from './server/credits';
 
 dotenv.config();
 
@@ -29,9 +36,14 @@ function getAiClient(): GoogleGenAI | null {
 
 async function startServer() {
   const app = express();
+  app.set('trust proxy', true);
+  // Stripe webhook must see the raw body, so register it before the JSON parser.
+  registerStripeWebhook(app);
   app.use(express.json({ limit: '2mb' }));
+  registerCreditRoutes(app);
 
   app.post('/api/cosmos/weave-turn', async (req, res) => {
+    let chargedPlayer: string | null = null;
     try {
       const { phase, p1Active, p1Passive, p2Active, p2Passive, currentState } = req.body;
       const ai = getAiClient();
@@ -42,6 +54,20 @@ async function startServer() {
           message: 'Using deterministic causal physics compiler.',
         });
       }
+
+      // Each Gemini-powered weave costs credits. The deterministic compiler stays free.
+      const playerId = getPlayerId(req);
+      if (!playerId) {
+        return res.status(400).json({ error: 'INVALID_PLAYER_ID' });
+      }
+      if (!ledger.spend(playerId, CREDITS_PER_WEAVE)) {
+        return res.status(402).json({
+          error: 'INSUFFICIENT_CREDITS',
+          message: 'Out of weave credits. Using deterministic causal physics compiler.',
+          balance: ledger.balance(playerId),
+        });
+      }
+      chargedPlayer = playerId;
 
       const systemInstruction = `You are the Causal Weaver and the 3rd Faction AI ("Entropy / The Great Silence") for a two-player emergent strategy god-game ("Aethelgard: The Ant-Farm Cosmos").
 Each turn:
@@ -193,8 +219,11 @@ Follow the rules of the current Phase:
 
       const rawText = (response.text ?? '{}').trim();
       const parsed = JSON.parse(rawText);
+      res.setHeader('X-Credits-Balance', String(ledger.balance(playerId)));
       return res.json(parsed);
     } catch (err: unknown) {
+      // Don't charge for a turn the AI failed to deliver.
+      if (chargedPlayer) ledger.refund(chargedPlayer, CREDITS_PER_WEAVE);
       const message = err instanceof Error ? err.message : 'Unknown Gemini server error';
       console.error('Error in /api/cosmos/weave-turn:', message);
       return res.status(500).json({ error: 'WEAVE_FAILED', message });

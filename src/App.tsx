@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useState } from 'react';
 import { CosmicViewport3D } from './components/CosmicViewport3D';
 import { DivineCommandDock } from './components/DivineCommandDock';
 import { ChronicleModal, TitleScreenOverlay } from './components/TitleAndModals';
+import { CreditsModal } from './components/CreditsModal';
 import {
   CelestialWorldType,
   CosmicPhase,
@@ -15,6 +16,12 @@ import {
   synthesizeMainAlien,
 } from './utils/causalEngine';
 import { soundEngine } from './utils/sound';
+import {
+  CreditStatus,
+  confirmCheckout,
+  fetchCreditStatus,
+  playerHeaders,
+} from './utils/credits';
 
 export default function App() {
   const [gameState, setGameState] = useState<CosmosGameState>(() =>
@@ -25,6 +32,45 @@ export default function App() {
   const [isDockCollapsed, setIsDockCollapsed] = useState<boolean>(false);
   const [isWeaving, setIsWeaving] = useState<boolean>(false);
   const [isMuted, setIsMuted] = useState<boolean>(false);
+  const [creditStatus, setCreditStatus] = useState<CreditStatus | null>(null);
+  const [showCreditsModal, setShowCreditsModal] = useState<boolean>(false);
+  const [creditsNotice, setCreditsNotice] = useState<string | null>(null);
+
+  const refreshCredits = useCallback(async () => {
+    const status = await fetchCreditStatus();
+    if (status) setCreditStatus(status);
+  }, []);
+
+  // Load balance, and finish a Stripe Checkout redirect if we just returned from one.
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const checkout = params.get('checkout');
+    const sessionId = params.get('session_id');
+    if (checkout) {
+      window.history.replaceState(null, '', window.location.pathname);
+    }
+    (async () => {
+      if (checkout === 'success' && sessionId) {
+        setShowCreditsModal(true);
+        const result = await confirmCheckout(sessionId);
+        if (result?.status === 'paid') {
+          setCreditsNotice(
+            result.applied
+              ? `Payment received: +${result.credits} weave credits.`
+              : 'Payment already applied to your balance.'
+          );
+        } else {
+          setCreditsNotice(
+            'Payment is still processing. Credits will appear once Stripe confirms it.'
+          );
+        }
+      } else if (checkout === 'cancelled') {
+        setShowCreditsModal(true);
+        setCreditsNotice('Checkout cancelled. No charge was made.');
+      }
+      await refreshCredits();
+    })();
+  }, [refreshCredits]);
   const [inspectedEntity, setInspectedEntity] = useState<{
     title: string;
     subtitle: string;
@@ -135,7 +181,7 @@ export default function App() {
     try {
       const response = await fetch('/api/cosmos/weave-turn', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: playerHeaders({ 'Content-Type': 'application/json' }),
         body: JSON.stringify({
           phase: gameState.phase,
           p1Active,
@@ -164,6 +210,15 @@ export default function App() {
       });
       if (response.ok) {
         aiResponseData = await response.json();
+        const balanceHeader = response.headers.get('X-Credits-Balance');
+        if (balanceHeader !== null) {
+          setCreditStatus((prev) => (prev ? { ...prev, balance: Number(balanceHeader) } : prev));
+        }
+      } else if (response.status === 402) {
+        // Out of credits: the deterministic compiler runs this turn; offer a top-up.
+        setCreditsNotice(null);
+        setShowCreditsModal(true);
+        void refreshCredits();
       }
     } catch {
       // Deterministic physics compiler handles offline or fallback seamlessly
@@ -301,6 +356,16 @@ export default function App() {
             <div className="flex items-center gap-2 shrink-0">
               <button
                 type="button"
+                onClick={() => {
+                  setCreditsNotice(null);
+                  setShowCreditsModal(true);
+                }}
+                className="px-3 py-1.5 text-xs font-medium text-amber-300 bg-[#161C2B] hover:bg-[#20283D] border border-amber-500/40 rounded-lg cursor-pointer whitespace-nowrap shrink-0 font-mono-tabular"
+              >
+                Credits: {creditStatus ? creditStatus.balance : '—'}
+              </button>
+              <button
+                type="button"
                 onClick={() => setShowChronicleModal(true)}
                 className="px-3 py-1.5 text-xs font-medium text-slate-200 bg-[#161C2B] hover:bg-[#20283D] border border-[#2A334B] rounded-lg cursor-pointer whitespace-nowrap shrink-0"
               >
@@ -397,6 +462,15 @@ export default function App() {
             onUpdateCutaway={handleUpdateCutaway}
           />
         </>
+      )}
+
+      {/* Weave Credits Purchase Modal */}
+      {showCreditsModal && (
+        <CreditsModal
+          status={creditStatus}
+          notice={creditsNotice}
+          onClose={() => setShowCreditsModal(false)}
+        />
       )}
 
       {/* Chronicle & Planetary Constitution Modal */}
